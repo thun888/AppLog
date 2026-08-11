@@ -30,9 +30,6 @@ class GitManager(private val context: Context) {
         const val REPO_DIR = "git_repo"
         const val DEFAULT_BRANCH = "main"
         const val REMOTE_NAME = "origin"
-        
-        private const val AUTHOR_NAME = "AppLog"
-        private const val AUTHOR_EMAIL = "applog@local"
     }
 
     private val repoDir: File
@@ -64,7 +61,9 @@ class GitManager(private val context: Context) {
 
     suspend fun commitSnapshot(
         content: String,
-        message: String
+        message: String,
+        authorName: String = "AppLog",
+        authorEmail: String = "applog@local"
     ): Result<String> = withContext(Dispatchers.IO) {
         try {
             git?.use { g ->
@@ -84,7 +83,7 @@ class GitManager(private val context: Context) {
                     return@use Result.success("")
                 }
                 
-                val person = PersonIdent(AUTHOR_NAME, AUTHOR_EMAIL)
+                val person = PersonIdent(authorName, authorEmail)
                 val commit = g.commit()
                     .setMessage(message)
                     .setAuthor(person)

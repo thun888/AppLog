@@ -31,6 +31,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val PREFS_REMOTE = "applog_remote_secure"
         private const val PREFS_DEBOUNCE = "applog_debounce"
         private const val PREFS_SETTINGS = "applog_settings"
+        private const val PREFS_GIT_IDENTITY = "applog_git_identity"
 
         private const val KEY_NOTES_JSON = "notes_json"
         private const val KEY_REMOTE_URL = "remote_url"
@@ -38,6 +39,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val KEY_REMOTE_PASS = "remote_password"
         private const val KEY_DEBOUNCE_THRESHOLD = "debounce_threshold"
         private const val KEY_AUTO_SCAN = "auto_scan_on_start"
+        private const val KEY_GIT_AUTHOR_NAME = "git_author_name"
+        private const val KEY_GIT_AUTHOR_EMAIL = "git_author_email"
     }
 
     private val appScanner = AppScanner(application)
@@ -206,12 +209,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun performCommit(customMessage: String) {
         val finalMessage = customMessage.ifBlank { _pendingAutoMessage.value }
         _showCommitDialog.value = false
-        
+
         viewModelScope.launch {
             _isScanning.value = true
             try {
                 val currentContent = AppListSerializer.serialize(_apps.value)
-                val result = gitManager.commitSnapshot(currentContent, finalMessage)
+                val (authorName, authorEmail) = getGitIdentity()
+                val result = gitManager.commitSnapshot(
+                    content = currentContent,
+                    message = finalMessage,
+                    authorName = authorName.ifBlank { "AppLog" },
+                    authorEmail = authorEmail.ifBlank { "applog@local" }
+                )
                 if (result.isSuccess) {
                     val commitId = result.getOrDefault("")
                     if (commitId.isNotEmpty()) {
@@ -523,6 +532,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<android.app.Application>()
             .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_AUTO_SCAN, enabled).apply()
+    }
+
+    // --- Git Identity ---
+
+    private val gitIdentityPrefs by lazy {
+        getApplication<Application>().getSharedPreferences(PREFS_GIT_IDENTITY, Context.MODE_PRIVATE)
+    }
+
+    fun saveGitIdentity(authorName: String, authorEmail: String) {
+        gitIdentityPrefs.edit()
+            .putString(KEY_GIT_AUTHOR_NAME, authorName)
+            .putString(KEY_GIT_AUTHOR_EMAIL, authorEmail)
+            .apply()
+    }
+
+    fun getGitIdentity(): Pair<String, String> {
+        return Pair(
+            gitIdentityPrefs.getString(KEY_GIT_AUTHOR_NAME, "") ?: "",
+            gitIdentityPrefs.getString(KEY_GIT_AUTHOR_EMAIL, "") ?: ""
+        )
     }
 
     // --- Remote Config ---

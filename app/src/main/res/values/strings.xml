@@ -52,6 +52,10 @@
     <string name="note_for">Note for %s</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+    <string name="git_identity">Git Identity</string>
+    <string name="git_author_name">Author Name</string>
+    <string name="git_author_email">Author Email</string>
+    <string name="save_git_identity">Save Identity</string>
     <string name="debounce_settings">Notification Settings</string>
     <string name="current_counter">Pending changes: %1$d / %2$d</string>
     <string name="notification_threshold">Change threshold for alerts</string>

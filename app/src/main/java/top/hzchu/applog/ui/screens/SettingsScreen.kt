@@ -47,9 +47,12 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val (remoteUrl, remoteUser, remotePass) = viewModel.getRemoteConfig()
+    val (gitAuthor, gitEmail) = viewModel.getGitIdentity()
     var url by remember { mutableStateOf(remoteUrl) }
     var username by remember { mutableStateOf(remoteUser) }
     var password by remember { mutableStateOf(remotePass) }
+    var authorName by remember { mutableStateOf(gitAuthor) }
+    var authorEmail by remember { mutableStateOf(gitEmail) }
     var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold().toString()) }
     val debounceCount = viewModel.getDebounceCount()
     var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
@@ -70,14 +73,14 @@ fun SettingsScreen(
         ) {
             // General Settings
             Text(stringResource(R.string.general_settings), style = MaterialTheme.typography.titleMedium)
-            
+
             ListItem(
                 headlineContent = { Text(stringResource(R.string.branch_management)) },
                 leadingContent = { Icon(Icons.Filled.AccountTree, contentDescription = null) },
                 trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
                 modifier = Modifier.clickable { onNavigateToBranches() }
             )
-            
+
             HorizontalDivider()
 
             Row(
@@ -114,6 +117,26 @@ fun SettingsScreen(
                 threshold = t.toString()
             }) {
                 Text(stringResource(R.string.save_threshold))
+            }
+
+            // Git Identity
+            Text(stringResource(R.string.git_identity), style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = authorName,
+                onValueChange = { authorName = it },
+                label = { Text(stringResource(R.string.git_author_name)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = authorEmail,
+                onValueChange = { authorEmail = it },
+                label = { Text(stringResource(R.string.git_author_email)) },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(onClick = {
+                viewModel.saveGitIdentity(authorName, authorEmail)
+            }) {
+                Text(stringResource(R.string.save_git_identity))
             }
 
             // Remote Config

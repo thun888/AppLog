@@ -52,6 +52,10 @@
     <string name="note_for">%s 的备注</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
+    <string name="git_identity">Git 身份</string>
+    <string name="git_author_name">作者名称</string>
+    <string name="git_author_email">作者邮箱</string>
+    <string name="save_git_identity">保存身份</string>
     <string name="debounce_settings">提醒设置</string>
     <string name="current_counter">待处理变更: %1$d / %2$d</string>
     <string name="notification_threshold">触发提醒的变更次数</string>
