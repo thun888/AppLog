@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ListBranchCommand
 import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.revwalk.RevWalk
@@ -297,6 +298,50 @@ class GitManager(private val context: Context) {
             git?.close()
         } catch (_: Exception) {
             // ignore
+        }
+    }
+
+    suspend fun getBranches(): Result<List<String>> = withContext(Dispatchers.IO) {
+        try {
+            val g = git ?: return@withContext Result.success(listOf(DEFAULT_BRANCH))
+            val branchList = g.branchList().setListMode(ListBranchCommand.ListMode.ALL).call()
+            val branches = branchList.map { it.name.removePrefix("refs/heads/").removePrefix("refs/remotes/origin/") }.distinct()
+            Result.success(branches)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCurrentBranch(): String = withContext(Dispatchers.IO) {
+        try {
+            val g = git ?: return@withContext DEFAULT_BRANCH
+            g.repository.branch ?: DEFAULT_BRANCH
+        } catch (_: Exception) {
+            DEFAULT_BRANCH
+        }
+    }
+
+    suspend fun checkoutBranch(branchName: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val g = git ?: return@withContext Result.failure(Exception("Repo not initialized"))
+            
+            // Check if branch exists locally
+            val localBranches = g.branchList().call()
+            val existsLocally = localBranches.any { it.name == "refs/heads/$branchName" }
+            
+            if (existsLocally) {
+                g.checkout().setName(branchName).call()
+            } else {
+                // Try to create from remote if available
+                g.checkout()
+                    .setCreateBranch(true)
+                    .setName(branchName)
+                    .setStartPoint("origin/$branchName")
+                    .call()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }

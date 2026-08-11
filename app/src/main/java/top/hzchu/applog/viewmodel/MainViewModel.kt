@@ -38,6 +38,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoadingHistory = MutableStateFlow(false)
     val isLoadingHistory: StateFlow<Boolean> = _isLoadingHistory.asStateFlow()
 
+    private val _branches = MutableStateFlow<List<String>>(emptyList())
+    val branches: StateFlow<List<String>> = _branches.asStateFlow()
+
+    private val _currentBranch = MutableStateFlow(GitManager.DEFAULT_BRANCH)
+    val currentBranch: StateFlow<String> = _currentBranch.asStateFlow()
+
     private val _diffResult = MutableStateFlow<DiffResult?>(null)
     val diffResult: StateFlow<DiffResult?> = _diffResult.asStateFlow()
 
@@ -74,7 +80,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         loadNotes()
         viewModelScope.launch {
             gitManager.init()
+            loadBranches()
             loadHistory()
+            if (getAutoScanOnStart()) {
+                scanApps()
+            }
         }
     }
 
@@ -181,6 +191,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _commits.value = it
             }.onFailure {
                 _commits.value = emptyList()
+            }
+            _isLoadingHistory.value = false
+            _currentBranch.value = gitManager.getCurrentBranch()
+        }
+    }
+
+    fun loadBranches() {
+        viewModelScope.launch {
+            gitManager.getBranches().onSuccess {
+                _branches.value = it
+            }
+        }
+    }
+
+    fun switchBranch(branchName: String) {
+        viewModelScope.launch {
+            _isLoadingHistory.value = true
+            gitManager.checkoutBranch(branchName).onSuccess {
+                _currentBranch.value = branchName
+                loadHistory()
+            }.onFailure {
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, it.message)
             }
             _isLoadingHistory.value = false
         }
@@ -365,6 +397,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<android.app.Application>()
             .getSharedPreferences("applog_debounce", Context.MODE_PRIVATE)
             .edit().putInt("debounce_threshold", threshold).apply()
+    }
+
+    fun getAutoScanOnStart(): Boolean {
+        return getApplication<android.app.Application>()
+            .getSharedPreferences("applog_settings", Context.MODE_PRIVATE)
+            .getBoolean("auto_scan_on_start", false)
+    }
+
+    fun setAutoScanOnStart(enabled: Boolean) {
+        getApplication<android.app.Application>()
+            .getSharedPreferences("applog_settings", Context.MODE_PRIVATE)
+            .edit().putBoolean("auto_scan_on_start", enabled).apply()
     }
 
     // --- Remote Config ---

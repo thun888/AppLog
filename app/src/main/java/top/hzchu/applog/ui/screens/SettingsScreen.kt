@@ -17,6 +17,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -43,6 +44,7 @@ fun SettingsScreen(
     var password by remember { mutableStateOf(remotePass) }
     var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold().toString()) }
     val debounceCount = viewModel.getDebounceCount()
+    var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
 
     Scaffold(
         modifier = modifier,
@@ -58,6 +60,23 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // General Settings
+            Text(stringResource(R.string.general_settings), style = MaterialTheme.typography.titleMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.auto_scan_on_start))
+                Switch(
+                    checked = autoScan,
+                    onCheckedChange = {
+                        autoScan = it
+                        viewModel.setAutoScanOnStart(it)
+                    }
+                )
+            }
+
             // Debounce Settings
             Text(stringResource(R.string.debounce_settings), style = MaterialTheme.typography.titleMedium)
             Text(

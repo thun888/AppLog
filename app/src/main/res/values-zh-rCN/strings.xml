@@ -4,6 +4,12 @@
     <string name="tab_history">历史</string>
     <string name="current_status">当前状态</string>
     <string name="loading">加载中...</string>
+    <string name="create_tag">创建标签</string>
+    <string name="tag_name">标签名称</string>
+    <string name="tag_message">描述（可选）</string>
+    <string name="create">创建</string>
+    <string name="general_settings">通用设置</string>
+    <string name="auto_scan_on_start">启动时自动扫描应用</string>
     <string name="tab_settings">设置</string>
     <string name="scan">扫描</string>
     <string name="commit">提交</string>
