@@ -185,6 +185,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Git Operations ---
 
+    private fun computeDiff(currentApps: List<AppInfo>, previousApps: List<AppInfo>): DiffResult {
+        val mapPrev = AppListSerializer.buildAppMap(previousApps)
+        val mapCurr = AppListSerializer.buildAppMap(currentApps)
+
+        val added = currentApps.filter { it.packageName !in mapPrev }
+        val removed = previousApps.filter { it.packageName !in mapCurr }
+        val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
+        val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
+
+        for (appCurr in currentApps) {
+            val appPrev = mapPrev[appCurr.packageName] ?: continue
+            if (isAppVersionChanged(appPrev, appCurr)) {
+                updated.add(appPrev to appCurr)
+            } else if (appPrev.note != appCurr.note) {
+                noteChanged.add(appPrev to appCurr)
+            }
+        }
+
+        return DiffResult(added = added, removed = removed, updated = updated, noteChanged = noteChanged)
+    }
+
     private data class DiffCounts(
         val added: Int = 0,
         val removed: Int = 0,
@@ -195,30 +216,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun computeDiffCounts(): DiffCounts {
-        val lastContent = gitManager.getSnapshotContent().getOrDefault("")
-        val lastApps = AppListSerializer.deserialize(lastContent)
-        val lastMap = AppListSerializer.buildAppMap(lastApps)
-        val currentMap = AppListSerializer.buildAppMap(_apps.value)
-
-        val added = _apps.value.count { it.packageName !in lastMap }
-        val removed = lastApps.count { it.packageName !in currentMap }
-        var updated = 0
-        var noteChanged = 0
-
-        for (app in _apps.value) {
-            val old = lastMap[app.packageName] ?: continue
-            if (old.versionCode != app.versionCode ||
-                old.versionName != app.versionName ||
-                old.signatureSha256 != app.signatureSha256) {
-                updated++
-            } else if (old.note != app.note) {
-                noteChanged++
-            }
-        }
-
-        return DiffCounts(added, removed, updated, noteChanged)
+        val lastApps = getLastSnapshotApps()
+        val diff = computeDiff(_apps.value, lastApps)
+        return DiffCounts(diff.added.size, diff.removed.size, diff.updated.size, diff.noteChanged.size)
     }
 
+    private fun isAppVersionChanged(oldApp: AppInfo, newApp: AppInfo): Boolean {
+        return oldApp.versionCode != newApp.versionCode ||
+                oldApp.versionName != newApp.versionName ||
+                oldApp.signatureSha256 != newApp.signatureSha256
+    }
+
+    private suspend fun getLastSnapshotApps(): List<AppInfo> {
+        val content = gitManager.getSnapshotContent().getOrDefault("")
+        return AppListSerializer.deserialize(content)
+    }
     fun prepareCommit() {
         viewModelScope.launch {
             try {
@@ -408,25 +420,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                     val headContent = gitManager.getSnapshotContent().getOrThrow()
                     val headApps = AppListSerializer.deserialize(headContent)
-                    
-                    val mapHead = AppListSerializer.buildAppMap(headApps)
-                    val mapCurrent = AppListSerializer.buildAppMap(currentApps)
-
-                    val added = currentApps.filter { it.packageName !in mapHead }
-                    val removed = headApps.filter { it.packageName !in mapCurrent }
-                    val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
-                    val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
-
-                    for (appCurrent in currentApps) {
-                        val appHead = mapHead[appCurrent.packageName] ?: continue
-                        if (appHead.versionCode != appCurrent.versionCode || 
-                            appHead.versionName != appCurrent.versionName ||
-                            appHead.signatureSha256 != appCurrent.signatureSha256) {
-                            updated.add(appHead to appCurrent)
-                        } else if (appHead.note != appCurrent.note) {
-                            noteChanged.add(appHead to appCurrent)
-                        }
-                    }
+                    val diff = computeDiff(currentApps, headApps)
 
                     _currentDetailCommit.value = CommitInfo(
                         id = "CURRENT",
@@ -436,12 +430,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         timestamp = System.currentTimeMillis()
                     )
                     _detailApps.value = currentApps
-                    _detailDiffResult.value = DiffResult(
-                        added = added, 
-                        removed = removed, 
-                        updated = updated,
-                        noteChanged = noteChanged
-                    )
+                    _detailDiffResult.value = diff
                 } else {
                     val commit = _commits.value.find { it.id == commitId } ?: return@launch
                     val parentId = gitManager.getParentCommitId(commitId)
@@ -456,33 +445,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         emptyList()
                     }
 
-                    val mapParent = AppListSerializer.buildAppMap(parentApps)
-                    val mapCurrent = AppListSerializer.buildAppMap(currentApps)
-
-                    val added = currentApps.filter { it.packageName !in mapParent }
-                    val removed = parentApps.filter { it.packageName !in mapCurrent }
-                    val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
-                    val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
-
-                    for (appCurrent in currentApps) {
-                        val appParent = mapParent[appCurrent.packageName] ?: continue
-                        if (appParent.versionCode != appCurrent.versionCode || 
-                            appParent.versionName != appCurrent.versionName ||
-                            appParent.signatureSha256 != appCurrent.signatureSha256) {
-                            updated.add(appParent to appCurrent)
-                        } else if (appParent.note != appCurrent.note) {
-                            noteChanged.add(appParent to appCurrent)
-                        }
-                    }
+                    val diff = computeDiff(currentApps, parentApps)
 
                     _currentDetailCommit.value = commit
                     _detailApps.value = currentApps
-                    _detailDiffResult.value = DiffResult(
-                        added = added, 
-                        removed = removed, 
-                        updated = updated,
-                        noteChanged = noteChanged
-                    )
+                    _detailDiffResult.value = diff
                 }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
