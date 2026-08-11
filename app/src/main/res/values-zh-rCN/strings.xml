@@ -44,10 +44,10 @@
     <string name="note_for">%s 的备注</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>
-    <string name="debounce_settings">防抖设置</string>
-    <string name="current_counter">当前计数: %1$d / %2$d</string>
-    <string name="notification_threshold">通知阈值</string>
-    <string name="save_threshold">保存阈值</string>
+    <string name="debounce_settings">提醒设置</string>
+    <string name="current_counter">待处理变更: %1$d / %2$d</string>
+    <string name="notification_threshold">触发提醒的变更次数</string>
+    <string name="save_threshold">保存设置</string>
     <string name="remote_repository">远程仓库</string>
     <string name="remote_url">远程地址</string>
     <string name="username">用户名</string>

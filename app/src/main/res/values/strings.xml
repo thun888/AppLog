@@ -44,10 +44,10 @@
     <string name="note_for">Note for %s</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
-    <string name="debounce_settings">Debounce Settings</string>
-    <string name="current_counter">Current counter: %1$d / %2$d</string>
-    <string name="notification_threshold">Notification threshold</string>
-    <string name="save_threshold">Save Threshold</string>
+    <string name="debounce_settings">Notification Settings</string>
+    <string name="current_counter">Pending changes: %1$d / %2$d</string>
+    <string name="notification_threshold">Change threshold for alerts</string>
+    <string name="save_threshold">Save Settings</string>
     <string name="remote_repository">Remote Repository</string>
     <string name="remote_url">Remote URL</string>
     <string name="username">Username</string>
