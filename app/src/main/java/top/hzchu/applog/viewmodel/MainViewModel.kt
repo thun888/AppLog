@@ -50,6 +50,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedCommit2 = MutableStateFlow<String?>(null)
     val selectedCommit2: StateFlow<String?> = _selectedCommit2.asStateFlow()
 
+    private val _showCommitDialog = MutableStateFlow(false)
+    val showCommitDialog: StateFlow<Boolean> = _showCommitDialog.asStateFlow()
+
+    private val _pendingAutoMessage = MutableStateFlow("")
+    val pendingAutoMessage: StateFlow<String> = _pendingAutoMessage.asStateFlow()
+
     private val _toastMessage = MutableStateFlow<String?>(null)
     val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
 
@@ -90,7 +96,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Git Operations ---
 
-    fun commitChanges() {
+    fun prepareCommit() {
         viewModelScope.launch {
             _isScanning.value = true
             try {
@@ -100,7 +106,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         app.copy(note = _notesMap.value[app.packageName] ?: "")
                     }
                 }
-                val currentContent = AppListSerializer.serialize(_apps.value)
                 val lastContent = gitManager.getSnapshotContent().getOrDefault("")
                 val lastApps = AppListSerializer.deserialize(lastContent)
                 val lastMap = AppListSerializer.buildAppMap(lastApps)
@@ -113,12 +118,39 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     old != null && (old.versionCode != app.versionCode ||
                             old.versionName != app.versionName)
                 }
-                val message = gitManager.generateCommitMessage(added, removed, updated)
-                val result = gitManager.commitSnapshot(currentContent, message)
+
+                if (added == 0 && removed == 0 && updated == 0) {
+                    _toastMessage.value = getApplication<Application>().getString(R.string.no_changes)
+                    return@launch
+                }
+
+                _pendingAutoMessage.value = gitManager.generateCommitMessage(added, removed, updated)
+                _showCommitDialog.value = true
+            } catch (e: Exception) {
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, e.message)
+            } finally {
+                _isScanning.value = false
+            }
+        }
+    }
+
+    fun dismissCommitDialog() {
+        _showCommitDialog.value = false
+    }
+
+    fun performCommit(customMessage: String) {
+        val finalMessage = customMessage.ifBlank { _pendingAutoMessage.value }
+        _showCommitDialog.value = false
+        
+        viewModelScope.launch {
+            _isScanning.value = true
+            try {
+                val currentContent = AppListSerializer.serialize(_apps.value)
+                val result = gitManager.commitSnapshot(currentContent, finalMessage)
                 if (result.isSuccess) {
                     val commitId = result.getOrDefault("")
                     if (commitId.isNotEmpty()) {
-                        _toastMessage.value = getApplication<Application>().getString(R.string.committed, message)
+                        _toastMessage.value = getApplication<Application>().getString(R.string.committed, finalMessage)
                     } else {
                         _toastMessage.value = getApplication<Application>().getString(R.string.no_changes)
                     }
@@ -133,6 +165,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 _isScanning.value = false
             }
         }
+    }
+
+    fun commitChanges() {
+        prepareCommit()
     }
 
     fun loadHistory() {

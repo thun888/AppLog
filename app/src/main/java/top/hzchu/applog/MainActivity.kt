@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -63,7 +64,16 @@ fun AppLogApp() {
     var selectedTab by remember { mutableStateOf(NavigationTab.APPS) }
     val snackbarHostState = remember { SnackbarHostState() }
     val toastMessage by viewModel.toastMessage.collectAsState()
+    val showCommitDialog by viewModel.showCommitDialog.collectAsState()
+    val pendingAutoMessage by viewModel.pendingAutoMessage.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
+
+    var commitMessageText by remember { mutableStateOf("") }
+    LaunchedEffect(showCommitDialog) {
+        if (showCommitDialog) {
+            commitMessageText = ""
+        }
+    }
 
     LaunchedEffect(toastMessage) {
         toastMessage?.let { msg ->
@@ -96,7 +106,7 @@ fun AppLogApp() {
         floatingActionButton = {
             if (selectedTab == NavigationTab.APPS) {
                 FloatingActionButton(
-                    onClick = { viewModel.commitChanges() },
+                    onClick = { viewModel.prepareCommit() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.commit))
@@ -155,6 +165,46 @@ fun AppLogApp() {
             dismissButton = {
                 TextButton(
                     onClick = { editingPackage = null }
+                ) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    // Commit message dialog
+    if (showCommitDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissCommitDialog() },
+            title = { Text(stringResource(R.string.commit_dialog_title)) },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.commit_message_placeholder),
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    OutlinedTextField(
+                        value = commitMessageText,
+                        onValueChange = { commitMessageText = it },
+                        placeholder = { Text(pendingAutoMessage) },
+                        modifier = Modifier.fillMaxWidth(),
+                        maxLines = 3
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.performCommit(commitMessageText)
+                    }
+                ) {
+                    Text(stringResource(R.string.commit))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { viewModel.dismissCommitDialog() }
                 ) {
                     Text(stringResource(R.string.cancel))
                 }

@@ -55,7 +55,7 @@ fun AppsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.commitChanges() },
+                onClick = { viewModel.prepareCommit() },
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.commit))

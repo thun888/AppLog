@@ -26,6 +26,8 @@
     <string name="force_push">强制推送</string>
     <string name="force_pull">强制拉取</string>
     <string name="edit_note">编辑备注</string>
+    <string name="commit_dialog_title">提交更改</string>
+    <string name="commit_message_placeholder">输入提交信息 (可选)</string>
     <string name="note_for">%s 的备注</string>
     <string name="save">保存</string>
     <string name="cancel">取消</string>

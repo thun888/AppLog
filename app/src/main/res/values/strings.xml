@@ -26,6 +26,8 @@
     <string name="force_push">Force Push</string>
     <string name="force_pull">Force Pull</string>
     <string name="edit_note">Edit Note</string>
+    <string name="commit_dialog_title">Commit Changes</string>
+    <string name="commit_message_placeholder">Enter commit message (optional)</string>
     <string name="note_for">Note for %s</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
