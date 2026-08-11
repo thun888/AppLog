@@ -1,5 +1,6 @@
 package top.hzchu.applog.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +16,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,12 +33,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import top.hzchu.applog.R
+import top.hzchu.applog.model.AppInfo
 import top.hzchu.applog.ui.components.DiffAddedColor
 import top.hzchu.applog.ui.components.DiffItemAdded
 import top.hzchu.applog.ui.components.DiffItemRemoved
@@ -113,13 +120,19 @@ private fun DetailContentView(
     viewModel: MainViewModel,
     onAppClick: (top.hzchu.applog.model.AppInfo, top.hzchu.applog.model.AppInfo?) -> Unit
 ) {
+    val showSystem by viewModel.showSystemApps.collectAsState()
+    val showUser by viewModel.showUserApps.collectAsState()
+    var isExpanded by remember { mutableStateOf(false) }
+
+    fun AppInfo.shouldShow() = if (appType == AppInfo.AppType.SYSTEM) showSystem else showUser
+
+    val addedFiltered = diff.added.filter { it.shouldShow() }
+    val updatedFiltered = diff.updated.filter { it.second.shouldShow() }
+    val removedFiltered = diff.removed.filter { it.shouldShow() }
+    val noteChangedFiltered = diff.noteChanged.filter { it.second.shouldShow() }
+
     val addedPackages = diff.added.map { it.packageName }.toSet()
     val updatedPackages = diff.updated.map { it.second.packageName }.toSet()
-    val removedPackages = diff.removed.map { it.packageName }.toSet()
-    
-    val unchangedApps = allApps.filter { 
-        it.packageName !in addedPackages && it.packageName !in updatedPackages 
-    }
 
     LazyColumn(
         contentPadding = PaddingValues(12.dp),
@@ -135,48 +148,48 @@ private fun DetailContentView(
         }
 
         // 1. Added
-        if (diff.added.isNotEmpty()) {
+        if (addedFiltered.isNotEmpty()) {
             item {
                 Text(
-                    text = stringResource(R.string.diff_added, diff.added.size),
+                    text = stringResource(R.string.diff_added, addedFiltered.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffAddedColor,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(diff.added) { app -> 
+            items(addedFiltered) { app -> 
                 DiffItemAdded(app = app, onClick = { onAppClick(app, null) }) 
             }
         }
 
         // 2. Updated
-        if (diff.updated.isNotEmpty()) {
+        if (updatedFiltered.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_updated, diff.updated.size),
+                    text = stringResource(R.string.diff_updated, updatedFiltered.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffUpdatedColor,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(diff.updated) { (old, new) ->
+            items(updatedFiltered) { (old, new) ->
                 DiffItemUpdated(old = old, new = new, onClick = { onAppClick(new, old) })
             }
         }
 
         // 3. Removed
-        if (diff.removed.isNotEmpty()) {
+        if (removedFiltered.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_removed, diff.removed.size),
+                    text = stringResource(R.string.diff_removed, removedFiltered.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffRemovedColor,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(diff.removed) { app -> 
+            items(removedFiltered) { app -> 
                 DiffItemRemoved(app = app, onClick = { onAppClick(app, null) }) 
             }
             item {
@@ -186,7 +199,7 @@ private fun DetailContentView(
                 ) {
                     Button(
                         onClick = {
-                            viewModel.generateRestoreScript(diff.removed)
+                            viewModel.generateRestoreScript(removedFiltered)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DiffRemovedColor
@@ -201,17 +214,17 @@ private fun DetailContentView(
         }
 
         // 4. Note Changed
-        if (diff.noteChanged.isNotEmpty()) {
+        if (noteChangedFiltered.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_notes, diff.noteChanged.size),
+                    text = stringResource(R.string.diff_notes, noteChangedFiltered.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(diff.noteChanged) { (old, new) ->
+            items(noteChangedFiltered) { (old, new) ->
                 top.hzchu.applog.ui.components.DiffItemNoteChanged(
                     old = old, 
                     new = new, 
@@ -221,17 +234,45 @@ private fun DetailContentView(
         }
 
         // 5. Unchanged (The rest of the full list)
-        if (unchangedApps.isNotEmpty()) {
-            item {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Text(
-                    text = stringResource(R.string.apps_count, unchangedApps.size),
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+        item {
+            val unchangedCount = androidx.compose.runtime.remember(allApps, addedPackages, updatedPackages, showSystem, showUser) {
+                allApps.count { it.packageName !in addedPackages && it.packageName !in updatedPackages && it.shouldShow() }
             }
-            items(unchangedApps) { app ->
+
+            if (unchangedCount > 0) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isExpanded = !isExpanded }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = stringResource(R.string.apps_count, unchangedCount),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Icon(
+                        imageVector = if (isExpanded) 
+                            Icons.Filled.KeyboardArrowDown 
+                        else 
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+        }
+
+        if (isExpanded) {
+            val appsToShow = allApps.filter { 
+                it.packageName !in addedPackages && it.packageName !in updatedPackages 
+            }.filter { it.shouldShow() }
+            
+            items(appsToShow, key = { it.packageName }) { app ->
                 top.hzchu.applog.ui.components.AppItem(app = app, onClick = { onAppClick(app, null) })
             }
         }
