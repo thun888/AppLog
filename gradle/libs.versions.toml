@@ -11,6 +11,7 @@ composeBom = "2026.02.01"
 jgit = "6.9.0.202403050737-r"
 slf4j = "1.7.36"
 lifecycleViewmodelCompose = "2.8.7"
+coil = "2.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -29,6 +30,7 @@ androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 # JGit
 jgit-core = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }

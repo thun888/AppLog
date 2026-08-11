@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import top.hzchu.applog.MainActivity
+import top.hzchu.applog.R
 
 /**
  * 包变更广播接收器 - 实现防抖动计数器机制
@@ -23,7 +24,6 @@ class PackageChangeReceiver : BroadcastReceiver() {
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "app_changes"
-        const val NOTIFICATION_CHANNEL_NAME = "App Change Alert"
         const val NOTIFICATION_ID = 1001
         const val ACTION_RESET_COUNTER = "top.hzchu.applog.RESET_COUNTER"
         const val ACTION_TRIGGER_SCAN = "top.hzchu.applog.TRIGGER_SCAN"
@@ -101,12 +101,12 @@ class PackageChangeReceiver : BroadcastReceiver() {
 
         val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_sync)
-            .setContentTitle("App list changed")
-            .setContentText("Detected " + count + " changes, consider committing a new snapshot")
+            .setContentTitle(context.getString(R.string.notif_title_list_changed))
+            .setContentText(context.getString(R.string.notif_text_changes_detected, count))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(openPendingIntent)
-            .addAction(android.R.drawable.ic_menu_revert, "Remind later", resetPendingIntent)
+            .addAction(android.R.drawable.ic_menu_revert, context.getString(R.string.remind_later), resetPendingIntent)
             .build()
 
         try {
@@ -120,10 +120,10 @@ class PackageChangeReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
-                NOTIFICATION_CHANNEL_NAME,
+                context.getString(R.string.notification_channel_name),
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "App install/uninstall/update alerts"
+                description = context.getString(R.string.notification_channel_desc)
             }
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)

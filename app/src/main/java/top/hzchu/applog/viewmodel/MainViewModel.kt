@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import top.hzchu.applog.R
 import top.hzchu.applog.git.CommitInfo
 import top.hzchu.applog.git.GitManager
 import top.hzchu.applog.model.AppInfo
@@ -80,7 +81,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     app.copy(note = notes[app.packageName] ?: "")
                 }
             } catch (e: Exception) {
-                _toastMessage.value = "Scan failed: " + e.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.scan_failed, e.message)
             } finally {
                 _isScanning.value = false
             }
@@ -117,17 +118,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (result.isSuccess) {
                     val commitId = result.getOrDefault("")
                     if (commitId.isNotEmpty()) {
-                        _toastMessage.value = "Committed: " + message
+                        _toastMessage.value = getApplication<Application>().getString(R.string.committed, message)
                     } else {
-                        _toastMessage.value = "No changes"
+                        _toastMessage.value = getApplication<Application>().getString(R.string.no_changes)
                     }
                     loadHistory()
                     PackageChangeReceiver.resetCounter(getApplication())
                 } else {
-                    _toastMessage.value = "Commit failed: " + result.exceptionOrNull()?.message
+                    _toastMessage.value = getApplication<Application>().getString(R.string.commit_failed, result.exceptionOrNull()?.message)
                 }
             } catch (e: Exception) {
-                _toastMessage.value = "Error: " + e.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, e.message)
             } finally {
                 _isScanning.value = false
             }
@@ -153,11 +154,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun computeDiff() {
         val commit1 = _selectedCommit1.value ?: run {
-            _toastMessage.value = "Please select first commit"
+            _toastMessage.value = getApplication<Application>().getString(R.string.select_first_commit)
             return
         }
         val commit2 = _selectedCommit2.value ?: run {
-            _toastMessage.value = "Please select second commit"
+            _toastMessage.value = getApplication<Application>().getString(R.string.select_second_commit)
             return
         }
         viewModelScope.launch {
@@ -190,7 +191,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     updated = updated, noteChanged = noteChanged
                 )
             } catch (e: Exception) {
-                _toastMessage.value = "Diff failed: " + e.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
             } finally {
                 _isComputingDiff.value = false
             }
@@ -199,7 +200,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun computeDiffWithCurrent() {
         val commitId = _selectedCommit1.value ?: run {
-            _toastMessage.value = "Please select a historical commit"
+            _toastMessage.value = getApplication<Application>().getString(R.string.select_historical_commit)
             return
         }
         viewModelScope.launch {
@@ -224,7 +225,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     added = added, removed = removed, updated = updated
                 )
             } catch (e: Exception) {
-                _toastMessage.value = "Diff failed: " + e.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
             } finally {
                 _isComputingDiff.value = false
             }
@@ -236,10 +237,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun createTag(commitId: String, tagName: String, message: String) {
         viewModelScope.launch {
             gitManager.createTag(commitId, tagName, message).onSuccess {
-                _toastMessage.value = "Tag \"" + tagName + "\" created"
+                _toastMessage.value = getApplication<Application>().getString(R.string.tag_created, tagName)
                 loadHistory()
             }.onFailure {
-                _toastMessage.value = "Tag failed: " + it.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.tag_failed, it.message)
             }
         }
     }
@@ -294,30 +295,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun pushToRemote(remoteUrl: String, username: String, password: String, force: Boolean) {
         viewModelScope.launch {
-            _toastMessage.value = "Pushing..."
+            _toastMessage.value = getApplication<Application>().getString(R.string.pushing)
             try {
                 val result = gitManager.pushToRemote(remoteUrl, username, password, force)
-                _toastMessage.value = if (result.isSuccess) "Push success" 
-                    else "Push failed: " + result.exceptionOrNull()?.message
+                _toastMessage.value = if (result.isSuccess) getApplication<Application>().getString(R.string.push_success) 
+                    else getApplication<Application>().getString(R.string.push_error, result.exceptionOrNull()?.message)
             } catch (e: Exception) {
-                _toastMessage.value = "Push error: " + e.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.push_error, e.message)
             }
         }
     }
 
     fun pullFromRemote(remoteUrl: String, username: String, password: String, force: Boolean) {
         viewModelScope.launch {
-            _toastMessage.value = "Pulling..."
+            _toastMessage.value = getApplication<Application>().getString(R.string.pulling)
             try {
                 val result = gitManager.pullFromRemote(remoteUrl, username, password, force)
                 if (result.isSuccess) {
-                    _toastMessage.value = "Pull success"
+                    _toastMessage.value = getApplication<Application>().getString(R.string.pull_success)
                     loadHistory()
                 } else {
-                    _toastMessage.value = "Pull failed: " + result.exceptionOrNull()?.message
+                    _toastMessage.value = getApplication<Application>().getString(R.string.pull_failed, result.exceptionOrNull()?.message)
                 }
             } catch (e: Exception) {
-                _toastMessage.value = "Pull error: " + e.message
+                _toastMessage.value = getApplication<Application>().getString(R.string.pull_error, e.message)
             }
         }
     }

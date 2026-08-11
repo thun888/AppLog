@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.hzchu.applog.ui.navigation.NavigationTab
@@ -86,8 +87,8 @@ fun AppLogApp() {
                     NavigationBarItem(
                         selected = selectedTab == tab,
                         onClick = { selectedTab = tab },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) }
+                        icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
+                        label = { Text(stringResource(tab.labelRes)) }
                     )
                 }
             }
@@ -98,7 +99,7 @@ fun AppLogApp() {
                     onClick = { viewModel.commitChanges() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
                 ) {
-                    Icon(Icons.Filled.Add, contentDescription = "Commit")
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.commit))
                 }
             }
         }
@@ -132,12 +133,12 @@ fun AppLogApp() {
         val pkg = editingPackage!!
         AlertDialog(
             onDismissRequest = { editingPackage = null },
-            title = { Text("Edit Note") },
+            title = { Text(stringResource(R.string.edit_note)) },
             text = {
                 OutlinedTextField(
                     value = editingNoteText,
                     onValueChange = { editingNoteText = it },
-                    label = { Text("Note for " + pkg) },
+                    label = { Text(stringResource(R.string.note_for, pkg)) },
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
                 )
             },
@@ -148,14 +149,14 @@ fun AppLogApp() {
                         editingPackage = null
                     }
                 ) {
-                    Text("Save")
+                    Text(stringResource(R.string.save))
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { editingPackage = null }
                 ) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.cancel))
                 }
             }
         )

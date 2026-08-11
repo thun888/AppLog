@@ -35,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.R
 import top.hzchu.applog.ui.components.DiffAddedColor
 import top.hzchu.applog.ui.components.DiffItemAdded
 import top.hzchu.applog.ui.components.DiffItemRemoved
@@ -58,19 +60,19 @@ fun DiffScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Diff View") },
+                title = { Text(stringResource(R.string.tab_diff)) },
                 actions = {
                     IconButton(
                         onClick = { viewModel.computeDiffWithCurrent() },
                         enabled = selected1 != null
                     ) {
-                        Icon(Icons.Filled.PlayArrow, contentDescription = "Diff with current")
+                        Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.scan))
                     }
                     IconButton(
                         onClick = { viewModel.computeDiff() },
                         enabled = selected1 != null && selected2 != null
                     ) {
-                        Icon(Icons.Filled.Compare, contentDescription = "Compare")
+                        Icon(Icons.Filled.Compare, contentDescription = stringResource(R.string.compute_diff))
                     }
                 }
             )
@@ -98,18 +100,18 @@ private fun EmptyDiffView(onCompute: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "No diff to show",
+            text = stringResource(R.string.no_diff),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
-            text = "Select commits in History tab",
+            text = stringResource(R.string.select_in_history),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(16.dp))
         Button(onClick = onCompute) {
-            Text("Compute Diff")
+            Text(stringResource(R.string.compute_diff))
         }
     }
 }
@@ -135,7 +137,7 @@ private fun DiffContentView(
         if (diff.added.isNotEmpty()) {
             item {
                 Text(
-                    text = "Added (" + diff.added.size + ")",
+                    text = stringResource(R.string.diff_added, diff.added.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffAddedColor,
                     fontWeight = FontWeight.Bold
@@ -148,7 +150,7 @@ private fun DiffContentView(
             item {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = "Removed (" + diff.removed.size + ")",
+                    text = stringResource(R.string.diff_removed, diff.removed.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffRemovedColor,
                     fontWeight = FontWeight.Bold
@@ -170,7 +172,7 @@ private fun DiffContentView(
                     ) {
                         Icon(Icons.Filled.ContentCopy, contentDescription = null)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Copy ADB Script")
+                        Text(stringResource(R.string.copy_adb_script))
                     }
                 }
             }
@@ -180,7 +182,7 @@ private fun DiffContentView(
             item {
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = "Updated (" + diff.updated.size + ")",
+                    text = stringResource(R.string.diff_updated, diff.updated.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffUpdatedColor,
                     fontWeight = FontWeight.Bold

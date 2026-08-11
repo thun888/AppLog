@@ -26,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.R
 import top.hzchu.applog.ui.components.AppItem
 import top.hzchu.applog.viewmodel.MainViewModel
 
@@ -43,10 +45,10 @@ fun AppsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("App List") },
+                title = { Text(stringResource(R.string.tab_apps)) },
                 actions = {
                     androidx.compose.material3.IconButton(onClick = { viewModel.scanApps() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Scan")
+                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
                     }
                 }
             )
@@ -56,7 +58,7 @@ fun AppsScreen(
                 onClick = { viewModel.commitChanges() },
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             ) {
-                Icon(Icons.Filled.Add, contentDescription = "Commit")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.commit))
             }
         }
     ) { padding ->
@@ -76,12 +78,12 @@ fun AppsScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     Text(
-                        text = "No apps scanned",
+                        text = stringResource(R.string.no_apps),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Tap refresh to scan",
+                        text = stringResource(R.string.tap_to_scan),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -93,7 +95,7 @@ fun AppsScreen(
                 ) {
                     item {
                         Text(
-                            text = "${apps.size} apps",
+                            text = stringResource(R.string.apps_count, apps.size),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = 4.dp, vertical = 4.dp),

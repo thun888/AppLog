@@ -7,21 +7,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Android
-import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import top.hzchu.applog.R
 import top.hzchu.applog.model.AppInfo
 
 @Composable
@@ -45,15 +42,10 @@ fun AppItem(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = if (app.appType == AppInfo.AppType.SYSTEM)
-                    Icons.Filled.Android else Icons.Filled.Smartphone,
-                contentDescription = null,
-                modifier = Modifier.size(32.dp),
-                tint = if (app.appType == AppInfo.AppType.SYSTEM)
-                    MaterialTheme.colorScheme.tertiary
-                else
-                    MaterialTheme.colorScheme.primary
+            AppIcon(
+                packageName = app.packageName,
+                appType = app.appType,
+                iconSize = 40.dp
             )
             Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -72,7 +64,7 @@ fun AppItem(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = "v${app.versionName} (${app.versionCode})",
+                    text = stringResource(R.string.version_format, app.versionName, app.versionCode),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

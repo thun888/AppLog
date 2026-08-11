@@ -27,6 +27,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.R
 import top.hzchu.applog.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,7 +47,7 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(title = { Text("Settings") })
+            TopAppBar(title = { Text(stringResource(R.string.tab_settings)) })
         }
     ) { padding ->
         Column(
@@ -57,16 +59,16 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Debounce Settings
-            Text("Debounce Settings", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.debounce_settings), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "Current counter: " + debounceCount + " / " + threshold,
+                text = stringResource(R.string.current_counter, debounceCount, threshold.toIntOrNull() ?: 0),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             OutlinedTextField(
                 value = threshold,
                 onValueChange = { threshold = it },
-                label = { Text("Notification threshold") },
+                label = { Text(stringResource(R.string.notification_threshold)) },
                 modifier = Modifier.fillMaxWidth()
             )
             Button(onClick = {
@@ -74,33 +76,33 @@ fun SettingsScreen(
                 viewModel.setDebounceThreshold(t)
                 threshold = t.toString()
             }) {
-                Text("Save Threshold")
+                Text(stringResource(R.string.save_threshold))
             }
 
             // Remote Config
-            Text("Remote Repository", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.remote_repository), style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = url,
                 onValueChange = { url = it },
-                label = { Text("Remote URL") },
+                label = { Text(stringResource(R.string.remote_url)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username") },
+                label = { Text(stringResource(R.string.username)) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password / Token") },
+                label = { Text(stringResource(R.string.password_token)) },
                 modifier = Modifier.fillMaxWidth()
             )
             Button(onClick = {
                 viewModel.saveRemoteConfig(url, username, password)
             }) {
-                Text("Save Remote Config")
+                Text(stringResource(R.string.save_remote_config))
             }
 
             // Push / Pull
@@ -115,7 +117,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Push")
+                    Text(stringResource(R.string.push))
                 }
                 Button(
                     onClick = {
@@ -124,7 +126,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Pull")
+                    Text(stringResource(R.string.pull))
                 }
             }
             Row(
@@ -138,7 +140,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Force Push")
+                    Text(stringResource(R.string.force_push))
                 }
                 Button(
                     onClick = {
@@ -147,7 +149,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Force Pull")
+                    Text(stringResource(R.string.force_pull))
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))

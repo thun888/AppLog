@@ -24,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.R
 import top.hzchu.applog.ui.components.CommitItem
 import top.hzchu.applog.viewmodel.MainViewModel
 
@@ -42,10 +44,10 @@ fun HistoryScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("History") },
+                title = { Text(stringResource(R.string.tab_history)) },
                 actions = {
                     IconButton(onClick = { viewModel.loadHistory() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh")
+                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
                     }
                 }
             )
@@ -64,12 +66,12 @@ fun HistoryScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "No commits yet",
+                        text = stringResource(R.string.no_commits),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Scan and commit to get started",
+                        text = stringResource(R.string.scan_to_start),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -81,7 +83,7 @@ fun HistoryScreen(
                 ) {
                     item {
                         Text(
-                            text = "Select 2 commits for diff comparison",
+                            text = stringResource(R.string.select_commits_hint),
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
