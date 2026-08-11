@@ -175,6 +175,7 @@ fun SettingsScreen(
                 }
             )
             Button(onClick = {
+                viewModel.saveGitIdentity(authorName, authorEmail)
                 viewModel.saveRemoteConfig(url, username, password)
             }) {
                 Text(stringResource(R.string.save_remote_config))
@@ -187,6 +188,7 @@ fun SettingsScreen(
             ) {
                 Button(
                     onClick = {
+                        viewModel.saveGitIdentity(authorName, authorEmail)
                         viewModel.saveRemoteConfig(url, username, password)
                         viewModel.pushToRemote(url, username, password, force = false)
                     },
@@ -196,6 +198,7 @@ fun SettingsScreen(
                 }
                 Button(
                     onClick = {
+                        viewModel.saveGitIdentity(authorName, authorEmail)
                         viewModel.saveRemoteConfig(url, username, password)
                         viewModel.pullFromRemote(url, username, password, force = false)
                     },
@@ -210,6 +213,7 @@ fun SettingsScreen(
             ) {
                 Button(
                     onClick = {
+                        viewModel.saveGitIdentity(authorName, authorEmail)
                         viewModel.saveRemoteConfig(url, username, password)
                         viewModel.pushToRemote(url, username, password, force = true)
                     },
@@ -219,6 +223,7 @@ fun SettingsScreen(
                 }
                 Button(
                     onClick = {
+                        viewModel.saveGitIdentity(authorName, authorEmail)
                         viewModel.saveRemoteConfig(url, username, password)
                         viewModel.pullFromRemote(url, username, password, force = true)
                     },

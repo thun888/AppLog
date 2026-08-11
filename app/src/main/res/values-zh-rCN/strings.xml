@@ -59,6 +59,7 @@
     <string name="commit_message_placeholder">输入提交信息 (可选)</string>
     <string name="note_for">%s 的备注</string>
     <string name="save">保存</string>
+    <string name="save_success">设置已保存</string>
     <string name="cancel">取消</string>
     <string name="git_identity">Git 身份</string>
     <string name="git_author_name">作者名称</string>

@@ -59,6 +59,7 @@
     <string name="commit_message_placeholder">Enter commit message (optional)</string>
     <string name="note_for">Note for %s</string>
     <string name="save">Save</string>
+    <string name="save_success">Settings saved</string>
     <string name="cancel">Cancel</string>
     <string name="git_identity">Git Identity</string>
     <string name="git_author_name">Author Name</string>
