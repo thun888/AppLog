@@ -179,7 +179,7 @@ fun AppLogApp() {
                         editingApp = app
                         previousAppForDiff = prev
                         isDetailEditable = true
-                        editingNoteText = viewModel.notesMap.value[app.packageName] ?: ""
+                        editingNoteText = app.note
                     },
                     modifier = Modifier.padding(innerPadding)
                 )

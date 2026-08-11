@@ -27,13 +27,11 @@ import top.hzchu.applog.serializer.AppListSerializer
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
-        private const val PREFS_NOTES = "applog_notes"
         private const val PREFS_REMOTE = "applog_remote_secure"
         private const val PREFS_DEBOUNCE = "applog_debounce"
         private const val PREFS_SETTINGS = "applog_settings"
         private const val PREFS_GIT_IDENTITY = "applog_git_identity"
 
-        private const val KEY_NOTES_JSON = "notes_json"
         private const val KEY_REMOTE_URL = "remote_url"
         private const val KEY_REMOTE_USER = "remote_username"
         private const val KEY_REMOTE_PASS = "remote_password"
@@ -145,9 +143,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Notes ---
 
-    private val notesPrefs =
-        application.getSharedPreferences(PREFS_NOTES, Context.MODE_PRIVATE)
-
     private val remotePrefs by lazy {
         val masterKey = MasterKey.Builder(application)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -165,9 +160,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val notesMap: StateFlow<Map<String, String>> = _notesMap.asStateFlow()
 
     init {
-        loadNotes()
         viewModelScope.launch {
             gitManager.init()
+            loadNotesFromWorkingFile()
             loadBranches()
             loadHistory()
             if (getAutoScanOnStart()) {
@@ -317,6 +312,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         _currentBranch.value = gitManager.getCurrentBranch()
         _unpushedCount.value = gitManager.getUnpushedCount().getOrDefault(0)
+        loadNotesFromWorkingFile()
         _isLoadingHistory.value = false
     }
 
@@ -491,48 +487,60 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // --- Notes ---
 
+    /**
+     * 从 Git 工作目录的 apps_snapshot.txt 加载备注
+     */
+    private fun loadNotesFromWorkingFile() {
+        try {
+            val file = java.io.File(
+                getApplication<Application>().filesDir,
+                GitManager.REPO_DIR + "/" + GitManager.SNAPSHOT_FILE
+            )
+            if (!file.exists()) return
+            val apps = AppListSerializer.deserialize(file.readText())
+            _notesMap.value = apps
+                .filter { it.note.isNotEmpty() }
+                .associate { it.packageName to it.note }
+        } catch (_: Exception) {
+            // 文件不存在或损坏时，保持现有 map
+        }
+    }
+
+    /**
+     * 将 _notesMap 中的备注写回工作文件
+     * 仅更新 note 字段，保留文件中其他应用字段不变
+     */
+    private fun syncNotesToWorkingFile() {
+        try {
+            val file = java.io.File(
+                getApplication<Application>().filesDir,
+                GitManager.REPO_DIR + "/" + GitManager.SNAPSHOT_FILE
+            )
+            val existingApps = if (file.exists()) {
+                AppListSerializer.deserialize(file.readText())
+            } else {
+                emptyList()
+            }
+            val notes = _notesMap.value
+            val updatedApps = existingApps.map { app ->
+                val newNote = notes[app.packageName]
+                if (newNote != null) app.copy(note = newNote) else app
+            }
+            file.writeText(AppListSerializer.serialize(updatedApps))
+        } catch (_: Exception) {
+            // 写入失败不影响内存状态
+        }
+    }
+
     fun updateNote(packageName: String, note: String) {
         val currentNotes = _notesMap.value.toMutableMap()
         if (note.isBlank()) currentNotes.remove(packageName)
         else currentNotes[packageName] = note
         _notesMap.value = currentNotes
-        saveNotes()
+        syncNotesToWorkingFile()
         _apps.value = _apps.value.map { app ->
             if (app.packageName == packageName) app.copy(note = note) else app
         }
-    }
-
-    private fun loadNotes() {
-        val json = notesPrefs.getString(KEY_NOTES_JSON, "{}") ?: "{}"
-        try {
-            val map = mutableMapOf<String, String>()
-            val trimmed = json.trim().removeSurrounding("{", "}")
-            if (trimmed.isNotBlank()) {
-                for (entry in trimmed.split(",")) {
-                    val kv = entry.split(":", limit = 2)
-                    if (kv.size == 2) {
-                        val k = kv[0].trim().removeSurrounding("\"")
-                        val v = kv[1].trim().removeSurrounding("\"")
-                        if (k.isNotEmpty()) map[k] = v
-                    }
-                }
-            }
-            _notesMap.value = map
-        } catch (_: Exception) {
-            _notesMap.value = emptyMap()
-        }
-    }
-
-    private fun saveNotes() {
-        val json = buildString {
-            append("{")
-            _notesMap.value.entries.forEachIndexed { i, entry ->
-                if (i > 0) append(",")
-                append("\"" + entry.key + "\":\"" + entry.value + "\"")
-            }
-            append("}")
-        }
-        notesPrefs.edit().putString(KEY_NOTES_JSON, json).apply()
     }
 
     // --- Push / Pull ---
