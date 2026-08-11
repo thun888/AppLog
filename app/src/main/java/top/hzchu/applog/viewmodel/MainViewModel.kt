@@ -111,6 +111,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _toastMessage = MutableStateFlow<String?>(null)
     val toastMessage: StateFlow<String?> = _toastMessage.asStateFlow()
 
+    private val _extractingProgress = MutableStateFlow<Float?>(null)
+    val extractingProgress: StateFlow<Float?> = _extractingProgress.asStateFlow()
+
+    fun showToast(message: String) {
+        _toastMessage.value = message
+    }
+
+    fun startExtraction(context: Context, packageName: String, appName: String) {
+        viewModelScope.launch {
+            _extractingProgress.value = 0f
+            val result = withContext(Dispatchers.IO) {
+                top.hzchu.applog.utils.ApkHelper.extractApk(context, packageName, appName) { progress ->
+                    _extractingProgress.value = progress
+                }
+            }
+            _extractingProgress.value = null
+            if (result.isSuccess) {
+                showToast(context.getString(R.string.extract_success))
+            } else {
+                showToast(context.getString(R.string.extract_failed, result.exceptionOrNull()?.message))
+            }
+        }
+    }
+
     // --- Notes ---
 
     private val notesPrefs =

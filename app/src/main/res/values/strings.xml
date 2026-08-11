@@ -98,4 +98,8 @@
     <string name="pull_success">Pull success</string>
     <string name="pull_failed">Pull failed: %s</string>
     <string name="pull_error">Pull error: %s</string>
+    <string name="extract_apk">Extract APK</string>
+    <string name="share_apk">Share APK</string>
+    <string name="extract_success">APK extracted to Downloads</string>
+    <string name="extract_failed">Extraction failed: %s</string>
 </resources>

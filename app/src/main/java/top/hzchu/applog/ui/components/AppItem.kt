@@ -1,6 +1,6 @@
 package top.hzchu.applog.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,16 +21,25 @@ import androidx.compose.ui.unit.dp
 import top.hzchu.applog.R
 import top.hzchu.applog.model.AppInfo
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun AppItem(
     app: AppInfo,
     onClick: (() -> Unit)? = null,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+            .then(
+                if (onClick != null || onLongClick != null) {
+                    Modifier.combinedClickable(
+                        onClick = { onClick?.invoke() },
+                        onLongClick = { onLongClick?.invoke() }
+                    )
+                } else Modifier
+            ),
         colors = CardDefaults.cardColors(
             containerColor = if (app.appType == AppInfo.AppType.SYSTEM)
                 MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
