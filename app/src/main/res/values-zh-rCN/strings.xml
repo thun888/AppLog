@@ -113,4 +113,5 @@
     <string name="tags_added">新增标签: %s</string>
     <string name="tags_removed_diff">移除标签: %s</string>
     <string name="tags_placeholder">标签1, 标签2</string>
+    <string name="remove_tag">移除 %s</string>
 </resources>

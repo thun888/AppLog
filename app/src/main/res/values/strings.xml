@@ -113,4 +113,5 @@
     <string name="tags_added">Added tags: %s</string>
     <string name="tags_removed_diff">Removed tags: %s</string>
     <string name="tags_placeholder">tag1, tag2</string>
+    <string name="remove_tag">Remove %s</string>
 </resources>

@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.hzchu.applog.model.AppInfo
 import top.hzchu.applog.ui.components.DiffUpdatedColor
+import top.hzchu.applog.ui.components.TagChipDisplay
+import top.hzchu.applog.ui.components.TagChipInput
 import top.hzchu.applog.ui.navigation.NavigationTab
 import top.hzchu.applog.ui.screens.AppsScreen
 import top.hzchu.applog.ui.screens.BranchScreen
@@ -100,6 +102,7 @@ fun AppLogApp() {
     val toastMessage by viewModel.toastMessage.collectAsState()
     val showCommitDialog by viewModel.showCommitDialog.collectAsState()
     val pendingAutoMessage by viewModel.pendingAutoMessage.collectAsState()
+    val allTags by viewModel.allTags.collectAsState()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     var commitMessageText by remember { mutableStateOf("") }
@@ -123,7 +126,7 @@ fun AppLogApp() {
     var previousAppForDiff by remember { mutableStateOf<AppInfo?>(null) }
     var isDetailEditable by remember { mutableStateOf(true) }
     var editingNoteText by remember { mutableStateOf("") }
-    var editingTagsText by remember { mutableStateOf("") }
+    var editingTagsList by remember { mutableStateOf<List<String>>(emptyList()) }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -163,7 +166,7 @@ fun AppLogApp() {
                     previousAppForDiff = prev
                     isDetailEditable = false
                     editingNoteText = app.note
-                    editingTagsText = app.tags
+                    editingTagsList = app.tags.split(", ").filter { it.isNotEmpty() }
                 },
                 modifier = Modifier.padding(innerPadding)
             )
@@ -182,7 +185,7 @@ fun AppLogApp() {
                         previousAppForDiff = prev
                         isDetailEditable = true
                         editingNoteText = app.note
-                        editingTagsText = app.tags
+                        editingTagsList = app.tags.split(", ").filter { it.isNotEmpty() }
                     },
                     modifier = Modifier.padding(innerPadding)
                 )
@@ -260,12 +263,11 @@ fun AppLogApp() {
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = editingTagsText,
-                            onValueChange = { editingTagsText = it },
-                            label = { Text(stringResource(R.string.app_info_tags)) },
-                            placeholder = { Text(stringResource(R.string.tags_placeholder)) },
-                            modifier = Modifier.fillMaxWidth()
+                        TagChipInput(
+                            tags = editingTagsList,
+                            onTagsChanged = { editingTagsList = it },
+                            allExistingTags = allTags,
+                            label = stringResource(R.string.app_info_tags)
                         )
                     } else {
                         AppDetailRow(
@@ -273,11 +275,14 @@ fun AppLogApp() {
                             value = app.note.ifEmpty { "无" },
                             isChanged = prev != null && prev.note != app.note
                         )
-                        AppDetailRow(
-                            label = stringResource(R.string.app_info_tags),
-                            value = app.tags.ifEmpty { "无" },
-                            isChanged = prev != null && prev.tags != app.tags
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.app_info_tags),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (prev != null && prev.tags != app.tags) DiffUpdatedColor else MaterialTheme.colorScheme.primary
                         )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        TagChipDisplay(tags = editingTagsList)
                     }
                 }
             },
@@ -285,7 +290,7 @@ fun AppLogApp() {
                 if (isDetailEditable) {
                     TextButton(
                         onClick = {
-                            viewModel.updateAppMetadata(app.packageName, editingNoteText, editingTagsText)
+                            viewModel.updateAppMetadata(app.packageName, editingNoteText, editingTagsList.joinToString(", "))
                             editingApp = null
                         }
                     ) {

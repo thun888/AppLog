@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -161,6 +162,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _tagsMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val tagsMap: StateFlow<Map<String, String>> = _tagsMap.asStateFlow()
+
+    /** 所有已使用过的独立标签（去重、排序），供输入提示用 */
+    val allTags: StateFlow<List<String>> = _tagsMap
+        .map { map ->
+            map.values
+                .flatMap { it.split(", ").filter { tag -> tag.isNotEmpty() } }
+                .distinct()
+                .sortedBy { it.lowercase() }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
         viewModelScope.launch {
