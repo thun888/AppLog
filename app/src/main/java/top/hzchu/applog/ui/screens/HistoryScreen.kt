@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import top.hzchu.applog.R
+import top.hzchu.applog.git.CommitInfo
 import top.hzchu.applog.ui.components.CommitItem
 import top.hzchu.applog.viewmodel.MainViewModel
 
@@ -33,12 +35,11 @@ import top.hzchu.applog.viewmodel.MainViewModel
 @Composable
 fun HistoryScreen(
     viewModel: MainViewModel,
+    onCommitClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val commits by viewModel.commits.collectAsState()
     val isLoading by viewModel.isLoadingHistory.collectAsState()
-    val selected1 by viewModel.selectedCommit1.collectAsState()
-    val selected2 by viewModel.selectedCommit2.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -60,52 +61,46 @@ fun HistoryScreen(
         ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (commits.isEmpty()) {
-                Column(
-                    modifier = Modifier.align(Alignment.Center),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = stringResource(R.string.no_commits),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.scan_to_start),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     item {
-                        Text(
-                            text = stringResource(R.string.select_commits_hint),
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        CommitItem(
+                            commit = CommitInfo(
+                                id = "CURRENT",
+                                shortId = "CUR",
+                                message = stringResource(R.string.current_status),
+                                author = "",
+                                timestamp = System.currentTimeMillis()
+                            ),
+                            isSelected = false,
+                            onClick = { onCommitClick("CURRENT") }
                         )
                     }
-                    items(commits, key = { it.id }) { commit ->
-                        CommitItem(
-                            commit = commit,
-                            isSelected = commit.id == selected1 || commit.id == selected2,
-                            onClick = {
-                                // Select for diff: first click -> slot1, second click -> slot2
-                                if (selected1 == null) {
-                                    viewModel.selectCommitForDiff(commit.id, 1)
-                                } else if (selected2 == null && commit.id != selected1) {
-                                    viewModel.selectCommitForDiff(commit.id, 2)
-                                } else {
-                                    // Reset and start over
-                                    viewModel.selectCommitForDiff(commit.id, 1)
-                                    viewModel.selectCommitForDiff("", 2)
-                                }
+
+                    if (commits.isEmpty()) {
+                        item {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_commits),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                        )
+                        }
+                    } else {
+                        items(commits, key = { it.id }) { commit ->
+                            CommitItem(
+                                commit = commit,
+                                isSelected = false,
+                                onClick = { onCommitClick(commit.id) }
+                            )
+                        }
                     }
                 }
             }

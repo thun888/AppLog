@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.hzchu.applog.ui.navigation.NavigationTab
 import top.hzchu.applog.ui.screens.AppsScreen
-import top.hzchu.applog.ui.screens.DiffScreen
+import top.hzchu.applog.ui.screens.CommitDetailScreen
 import top.hzchu.applog.ui.screens.HistoryScreen
 import top.hzchu.applog.ui.screens.SettingsScreen
 import top.hzchu.applog.ui.theme.AppLogTheme
@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
 fun AppLogApp() {
     val viewModel: MainViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(NavigationTab.APPS) }
+    var selectedCommitId by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val toastMessage by viewModel.toastMessage.collectAsState()
     val showCommitDialog by viewModel.showCommitDialog.collectAsState()
@@ -92,19 +93,21 @@ fun AppLogApp() {
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar {
-                NavigationTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
-                        icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
-                        label = { Text(stringResource(tab.labelRes)) }
-                    )
+            if (selectedCommitId == null) {
+                NavigationBar {
+                    NavigationTab.entries.forEach { tab ->
+                        NavigationBarItem(
+                            selected = selectedTab == tab,
+                            onClick = { selectedTab = tab },
+                            icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
+                            label = { Text(stringResource(tab.labelRes)) }
+                        )
+                    }
                 }
             }
         },
         floatingActionButton = {
-            if (selectedTab == NavigationTab.APPS) {
+            if (selectedTab == NavigationTab.APPS && selectedCommitId == null) {
                 FloatingActionButton(
                     onClick = { viewModel.prepareCommit() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -114,27 +117,36 @@ fun AppLogApp() {
             }
         }
     ) { innerPadding ->
-        when (selectedTab) {
-            NavigationTab.APPS -> AppsScreen(
+        if (selectedCommitId != null) {
+            CommitDetailScreen(
                 viewModel = viewModel,
-                onAppClick = { pkg ->
-                    editingPackage = pkg
-                    editingNoteText = viewModel.notesMap.value[pkg] ?: ""
-                },
+                commitId = selectedCommitId!!,
+                onBack = { selectedCommitId = null },
                 modifier = Modifier.padding(innerPadding)
             )
-            NavigationTab.HISTORY -> HistoryScreen(
-                viewModel = viewModel,
-                modifier = Modifier.padding(innerPadding)
-            )
-            NavigationTab.DIFF -> DiffScreen(
-                viewModel = viewModel,
-                modifier = Modifier.padding(innerPadding)
-            )
-            NavigationTab.SETTINGS -> SettingsScreen(
-                viewModel = viewModel,
-                modifier = Modifier.padding(innerPadding)
-            )
+        } else {
+            when (selectedTab) {
+                NavigationTab.APPS -> AppsScreen(
+                    viewModel = viewModel,
+                    onAppClick = { pkg ->
+                        editingPackage = pkg
+                        editingNoteText = viewModel.notesMap.value[pkg] ?: ""
+                    },
+                    modifier = Modifier.padding(innerPadding)
+                )
+                NavigationTab.HISTORY -> HistoryScreen(
+                    viewModel = viewModel,
+                    onCommitClick = { id ->
+                        viewModel.loadCommitDetail(id)
+                        selectedCommitId = id
+                    },
+                    modifier = Modifier.padding(innerPadding)
+                )
+                NavigationTab.SETTINGS -> SettingsScreen(
+                    viewModel = viewModel,
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
         }
     }
 

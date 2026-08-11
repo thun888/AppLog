@@ -2,7 +2,8 @@
     <string name="app_name">AppLog</string>
     <string name="tab_apps">Apps</string>
     <string name="tab_history">History</string>
-    <string name="tab_diff">Diff</string>
+    <string name="current_status">Current Status</string>
+    <string name="loading">Loading...</string>
     <string name="tab_settings">Settings</string>
     <string name="scan">Scan</string>
     <string name="commit">Commit</string>

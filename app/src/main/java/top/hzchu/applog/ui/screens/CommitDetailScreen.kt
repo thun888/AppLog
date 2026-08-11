@@ -14,14 +14,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Compare
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,32 +46,38 @@ import top.hzchu.applog.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DiffScreen(
+fun CommitDetailScreen(
     viewModel: MainViewModel,
+    @Suppress("UNUSED_PARAMETER") commitId: String,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val diff by viewModel.diffResult.collectAsState()
+    val diff by viewModel.detailDiffResult.collectAsState()
+    val apps by viewModel.detailApps.collectAsState()
     val isComputing by viewModel.isComputingDiff.collectAsState()
-    val selected1 by viewModel.selectedCommit1.collectAsState()
-    val selected2 by viewModel.selectedCommit2.collectAsState()
+    val commit by viewModel.currentDetailCommit.collectAsState()
 
     Scaffold(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tab_diff)) },
-                actions = {
-                    IconButton(
-                        onClick = { viewModel.computeDiffWithCurrent() },
-                        enabled = selected1 != null
-                    ) {
-                        Icon(Icons.Filled.PlayArrow, contentDescription = stringResource(R.string.scan))
+                title = { 
+                    Column {
+                        Text(
+                            text = commit?.message ?: stringResource(R.string.loading),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        if (commit?.id != "CURRENT") {
+                            Text(
+                                text = commit?.shortId ?: "",
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
                     }
-                    IconButton(
-                        onClick = { viewModel.computeDiff() },
-                        enabled = selected1 != null && selected2 != null
-                    ) {
-                        Icon(Icons.Filled.Compare, contentDescription = stringResource(R.string.compute_diff))
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
                 }
             )
@@ -83,44 +88,32 @@ fun DiffScreen(
         ) {
             if (isComputing) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (diff == null || diff!!.isEmpty) {
-                EmptyDiffView { viewModel.computeDiff() }
+            } else if (diff == null) {
+                Text(
+                    text = stringResource(R.string.diff_failed, "No data"),
+                    modifier = Modifier.align(Alignment.Center)
+                )
             } else {
-                DiffContentView(diff = diff!!, viewModel = viewModel)
+                DetailContentView(diff = diff!!, allApps = apps, viewModel = viewModel)
             }
         }
     }
 }
 
 @Composable
-private fun EmptyDiffView(onCompute: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = stringResource(R.string.no_diff),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = stringResource(R.string.select_in_history),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onCompute) {
-            Text(stringResource(R.string.compute_diff))
-        }
-    }
-}
-
-@Composable
-private fun DiffContentView(
+private fun DetailContentView(
     diff: top.hzchu.applog.model.DiffResult,
+    allApps: List<top.hzchu.applog.model.AppInfo>,
     viewModel: MainViewModel
 ) {
+    val addedPackages = diff.added.map { it.packageName }.toSet()
+    val updatedPackages = diff.updated.map { it.second.packageName }.toSet()
+    val removedPackages = diff.removed.map { it.packageName }.toSet()
+    
+    val unchangedApps = allApps.filter { 
+        it.packageName !in addedPackages && it.packageName !in updatedPackages 
+    }
+
     LazyColumn(
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -134,6 +127,7 @@ private fun DiffContentView(
             )
         }
 
+        // 1. Added
         if (diff.added.isNotEmpty()) {
             item {
                 Text(
@@ -146,9 +140,26 @@ private fun DiffContentView(
             items(diff.added) { app -> DiffItemAdded(app) }
         }
 
+        // 2. Updated
+        if (diff.updated.isNotEmpty()) {
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = stringResource(R.string.diff_updated, diff.updated.size),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = DiffUpdatedColor,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            items(diff.updated) { (old, new) ->
+                DiffItemUpdated(old = old, new = new)
+            }
+        }
+
+        // 3. Removed
         if (diff.removed.isNotEmpty()) {
             item {
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
                     text = stringResource(R.string.diff_removed, diff.removed.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
@@ -164,7 +175,7 @@ private fun DiffContentView(
                 ) {
                     Button(
                         onClick = {
-                            val script = viewModel.generateRestoreScript(diff.removed)
+                            viewModel.generateRestoreScript(diff.removed)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = DiffRemovedColor
@@ -178,18 +189,19 @@ private fun DiffContentView(
             }
         }
 
-        if (diff.updated.isNotEmpty()) {
+        // 4. Unchanged (The rest of the full list)
+        if (unchangedApps.isNotEmpty()) {
             item {
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_updated, diff.updated.size),
+                    text = stringResource(R.string.apps_count, unchangedApps.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                    color = DiffUpdatedColor,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            items(diff.updated) { (old, new) ->
-                DiffItemUpdated(old = old, new = new)
+            items(unchangedApps) { app ->
+                top.hzchu.applog.ui.components.AppItem(app = app, onClick = {})
             }
         }
     }

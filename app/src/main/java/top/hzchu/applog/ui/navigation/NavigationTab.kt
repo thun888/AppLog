@@ -15,6 +15,5 @@ enum class NavigationTab(
 ) {
     APPS(R.string.tab_apps, Icons.Filled.Apps),
     HISTORY(R.string.tab_history, Icons.Filled.History),
-    DIFF(R.string.tab_diff, Icons.Filled.Compare),
     SETTINGS(R.string.tab_settings, Icons.Filled.Settings)
 }

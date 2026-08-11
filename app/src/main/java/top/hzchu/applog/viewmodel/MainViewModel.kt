@@ -44,11 +44,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isComputingDiff = MutableStateFlow(false)
     val isComputingDiff: StateFlow<Boolean> = _isComputingDiff.asStateFlow()
 
-    private val _selectedCommit1 = MutableStateFlow<String?>(null)
-    val selectedCommit1: StateFlow<String?> = _selectedCommit1.asStateFlow()
+    private val _detailDiffResult = MutableStateFlow<DiffResult?>(null)
+    val detailDiffResult: StateFlow<DiffResult?> = _detailDiffResult.asStateFlow()
 
-    private val _selectedCommit2 = MutableStateFlow<String?>(null)
-    val selectedCommit2: StateFlow<String?> = _selectedCommit2.asStateFlow()
+    private val _detailApps = MutableStateFlow<List<AppInfo>>(emptyList())
+    val detailApps: StateFlow<List<AppInfo>> = _detailApps.asStateFlow()
+
+    private val _currentDetailCommit = MutableStateFlow<CommitInfo?>(null)
+    val currentDetailCommit: StateFlow<CommitInfo?> = _currentDetailCommit.asStateFlow()
 
     private val _showCommitDialog = MutableStateFlow(false)
     val showCommitDialog: StateFlow<Boolean> = _showCommitDialog.asStateFlow()
@@ -183,83 +186,71 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun selectCommitForDiff(commitId: String, slot: Int) {
-        if (slot == 1) _selectedCommit1.value = commitId
-        else _selectedCommit2.value = commitId
-    }
-
-    fun computeDiff() {
-        val commit1 = _selectedCommit1.value ?: run {
-            _toastMessage.value = getApplication<Application>().getString(R.string.select_first_commit)
-            return
-        }
-        val commit2 = _selectedCommit2.value ?: run {
-            _toastMessage.value = getApplication<Application>().getString(R.string.select_second_commit)
-            return
-        }
+    fun loadCommitDetail(commitId: String) {
         viewModelScope.launch {
             _isComputingDiff.value = true
             try {
-                val content1 = gitManager.getSnapshotContent(commit1).getOrThrow()
-                val content2 = gitManager.getSnapshotContent(commit2).getOrThrow()
-                val apps1 = AppListSerializer.deserialize(content1)
-                val apps2 = AppListSerializer.deserialize(content2)
-                val map1 = AppListSerializer.buildAppMap(apps1)
-                val map2 = AppListSerializer.buildAppMap(apps2)
+                if (commitId == "CURRENT") {
+                    // Compare current scanned apps with HEAD
+                    val currentApps = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
+                    val headContent = gitManager.getSnapshotContent().getOrThrow()
+                    val headApps = AppListSerializer.deserialize(headContent)
+                    
+                    val mapHead = AppListSerializer.buildAppMap(headApps)
+                    val mapCurrent = AppListSerializer.buildAppMap(currentApps)
 
-                val added = apps2.filter { it.packageName !in map1 }
-                val removed = apps1.filter { it.packageName !in map2 }
-                val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
-                val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
-
-                for (app2 in apps2) {
-                    val app1 = map1[app2.packageName] ?: continue
-                    if (app1.versionCode != app2.versionCode ||
-                        app1.versionName != app2.versionName ||
-                        app1.signatureSha256 != app2.signatureSha256) {
-                        updated.add(app1 to app2)
-                    } else if (app1.note != app2.note) {
-                        noteChanged.add(app1 to app2)
+                    val added = currentApps.filter { it.packageName !in mapHead }
+                    val removed = headApps.filter { it.packageName !in mapCurrent }
+                    val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
+                    for (appCurrent in currentApps) {
+                        val appHead = mapHead[appCurrent.packageName] ?: continue
+                        if (appHead.versionCode != appCurrent.versionCode || 
+                            appHead.versionName != appCurrent.versionName) {
+                            updated.add(appHead to appCurrent)
+                        }
                     }
-                }
-                _diffResult.value = DiffResult(
-                    added = added, removed = removed,
-                    updated = updated, noteChanged = noteChanged
-                )
-            } catch (e: Exception) {
-                _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
-            } finally {
-                _isComputingDiff.value = false
-            }
-        }
-    }
 
-    fun computeDiffWithCurrent() {
-        val commitId = _selectedCommit1.value ?: run {
-            _toastMessage.value = getApplication<Application>().getString(R.string.select_historical_commit)
-            return
-        }
-        viewModelScope.launch {
-            _isComputingDiff.value = true
-            try {
-                val content1 = gitManager.getSnapshotContent(commitId).getOrThrow()
-                val currentApps = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
-                val apps1 = AppListSerializer.deserialize(content1)
-                val map1 = AppListSerializer.buildAppMap(apps1)
-                val map2 = AppListSerializer.buildAppMap(currentApps)
-                val added = currentApps.filter { it.packageName !in map1 }
-                val removed = apps1.filter { it.packageName !in map2 }
-                val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
-                for (app2 in currentApps) {
-                    val app1 = map1[app2.packageName] ?: continue
-                    if (app1.versionCode != app2.versionCode ||
-                        app1.versionName != app2.versionName) {
-                        updated.add(app1 to app2)
+                    _currentDetailCommit.value = CommitInfo(
+                        id = "CURRENT",
+                        shortId = "CUR",
+                        message = getApplication<Application>().getString(R.string.current_status),
+                        author = "",
+                        timestamp = System.currentTimeMillis()
+                    )
+                    _detailApps.value = currentApps
+                    _detailDiffResult.value = DiffResult(added, removed, updated)
+                } else {
+                    val commit = _commits.value.find { it.id == commitId } ?: return@launch
+                    val parentId = gitManager.getParentCommitId(commitId)
+                    
+                    val currentContent = gitManager.getSnapshotContent(commitId).getOrThrow()
+                    val currentApps = AppListSerializer.deserialize(currentContent)
+                    
+                    val parentApps = if (parentId != null) {
+                        val parentContent = gitManager.getSnapshotContent(parentId).getOrThrow()
+                        AppListSerializer.deserialize(parentContent)
+                    } else {
+                        emptyList()
                     }
+
+                    val mapParent = AppListSerializer.buildAppMap(parentApps)
+                    val mapCurrent = AppListSerializer.buildAppMap(currentApps)
+
+                    val added = currentApps.filter { it.packageName !in mapParent }
+                    val removed = parentApps.filter { it.packageName !in mapCurrent }
+                    val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
+                    for (appCurrent in currentApps) {
+                        val appParent = mapParent[appCurrent.packageName] ?: continue
+                        if (appParent.versionCode != appCurrent.versionCode || 
+                            appParent.versionName != appCurrent.versionName) {
+                            updated.add(appParent to appCurrent)
+                        }
+                    }
+
+                    _currentDetailCommit.value = commit
+                    _detailApps.value = currentApps
+                    _detailDiffResult.value = DiffResult(added, removed, updated)
                 }
-                _diffResult.value = DiffResult(
-                    added = added, removed = removed, updated = updated
-                )
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
             } finally {

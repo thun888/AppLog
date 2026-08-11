@@ -148,6 +148,21 @@ class GitManager(private val context: Context) {
         }
     }
 
+    suspend fun getParentCommitId(commitId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val g = git ?: return@withContext null
+            val repo = g.repository
+            val objectId = repo.resolve(commitId) ?: return@withContext null
+            val revWalk = RevWalk(repo)
+            val commit = revWalk.parseCommit(objectId)
+            val parent = if (commit.parentCount > 0) commit.getParent(0).name else null
+            revWalk.close()
+            parent
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     suspend fun createTag(commitId: String, tagName: String, message: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val g = git ?: return@withContext Result.failure(Exception("Repo not initialized"))
