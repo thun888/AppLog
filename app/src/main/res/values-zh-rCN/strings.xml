@@ -11,6 +11,14 @@
     <string name="general_settings">通用设置</string>
     <string name="auto_scan_on_start">启动时自动扫描应用</string>
     <string name="tab_settings">设置</string>
+    <string name="branch_management">分支管理</string>
+    <string name="create_branch">新建分支</string>
+    <string name="branch_name">分支名称</string>
+    <string name="orphan_branch">孤儿分支</string>
+    <string name="orphan_branch_desc">开启一段全新的提交历史</string>
+    <string name="delete_branch_confirm">确定删除分支 \"%s\" 吗？</string>
+    <string name="branch_created">分支 \"%s\" 已创建</string>
+    <string name="branch_deleted">分支 \"%s\" 已删除</string>
     <string name="filter">筛选</string>
     <string name="show_system_apps">显示系统应用</string>
     <string name="show_user_apps">显示用户应用</string>

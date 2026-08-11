@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.hzchu.applog.ui.navigation.NavigationTab
 import top.hzchu.applog.ui.screens.AppsScreen
+import top.hzchu.applog.ui.screens.BranchScreen
 import top.hzchu.applog.ui.screens.CommitDetailScreen
 import top.hzchu.applog.ui.screens.HistoryScreen
 import top.hzchu.applog.ui.screens.SettingsScreen
@@ -63,6 +64,7 @@ fun AppLogApp() {
     val viewModel: MainViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(NavigationTab.APPS) }
     var selectedCommitId by remember { mutableStateOf<String?>(null) }
+    var isManagingBranches by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val toastMessage by viewModel.toastMessage.collectAsState()
     val showCommitDialog by viewModel.showCommitDialog.collectAsState()
@@ -93,7 +95,7 @@ fun AppLogApp() {
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            if (selectedCommitId == null) {
+            if (selectedCommitId == null && !isManagingBranches) {
                 NavigationBar {
                     NavigationTab.entries.forEach { tab ->
                         NavigationBarItem(
@@ -107,7 +109,7 @@ fun AppLogApp() {
             }
         },
         floatingActionButton = {
-            if (selectedTab == NavigationTab.APPS && selectedCommitId == null) {
+            if (selectedTab == NavigationTab.APPS && selectedCommitId == null && !isManagingBranches) {
                 FloatingActionButton(
                     onClick = { viewModel.prepareCommit() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -122,6 +124,12 @@ fun AppLogApp() {
                 viewModel = viewModel,
                 commitId = selectedCommitId!!,
                 onBack = { selectedCommitId = null },
+                modifier = Modifier.padding(innerPadding)
+            )
+        } else if (isManagingBranches) {
+            BranchScreen(
+                viewModel = viewModel,
+                onBack = { isManagingBranches = false },
                 modifier = Modifier.padding(innerPadding)
             )
         } else {
@@ -144,6 +152,7 @@ fun AppLogApp() {
                 )
                 NavigationTab.SETTINGS -> SettingsScreen(
                     viewModel = viewModel,
+                    onNavigateToBranches = { isManagingBranches = true },
                     modifier = Modifier.padding(innerPadding)
                 )
             }

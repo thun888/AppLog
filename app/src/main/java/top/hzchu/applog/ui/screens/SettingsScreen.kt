@@ -1,5 +1,6 @@
 package top.hzchu.applog.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,8 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -36,6 +43,7 @@ import top.hzchu.applog.viewmodel.MainViewModel
 @Composable
 fun SettingsScreen(
     viewModel: MainViewModel,
+    onNavigateToBranches: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (remoteUrl, remoteUser, remotePass) = viewModel.getRemoteConfig()
@@ -62,8 +70,18 @@ fun SettingsScreen(
         ) {
             // General Settings
             Text(stringResource(R.string.general_settings), style = MaterialTheme.typography.titleMedium)
+            
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.branch_management)) },
+                leadingContent = { Icon(Icons.Filled.AccountTree, contentDescription = null) },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+                modifier = Modifier.clickable { onNavigateToBranches() }
+            )
+            
+            HorizontalDivider()
+
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {

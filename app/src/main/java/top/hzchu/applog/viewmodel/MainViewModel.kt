@@ -209,15 +209,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadHistory() {
         viewModelScope.launch {
-            _isLoadingHistory.value = true
-            gitManager.getCommitHistory().onSuccess {
-                _commits.value = it
-            }.onFailure {
-                _commits.value = emptyList()
-            }
-            _isLoadingHistory.value = false
-            _currentBranch.value = gitManager.getCurrentBranch()
+            loadHistoryInternal()
         }
+    }
+
+    private suspend fun loadHistoryInternal() {
+        _isLoadingHistory.value = true
+        gitManager.getCommitHistory().onSuccess {
+            _commits.value = it
+        }.onFailure {
+            _commits.value = emptyList()
+        }
+        _currentBranch.value = gitManager.getCurrentBranch()
+        _isLoadingHistory.value = false
     }
 
     fun loadBranches() {
@@ -233,7 +237,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _isLoadingHistory.value = true
             gitManager.checkoutBranch(branchName).onSuccess {
                 _currentBranch.value = branchName
-                loadHistory()
+                loadBranches() // Refresh list to update selection markers
+                loadHistoryInternal()
+            }.onFailure {
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, it.message)
+                _isLoadingHistory.value = false
+            }
+        }
+    }
+
+    fun createBranch(branchName: String, isOrphan: Boolean = false) {
+        viewModelScope.launch {
+            gitManager.createBranch(branchName, isOrphan).onSuccess {
+                loadBranches()
+                if (isOrphan) {
+                    // Orphan branch automatically checkouts, so refresh history
+                    loadHistoryInternal()
+                }
+                _toastMessage.value = getApplication<Application>().getString(R.string.branch_created, branchName)
+            }.onFailure {
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, it.message)
+            }
+        }
+    }
+
+    fun deleteBranch(branchName: String) {
+        viewModelScope.launch {
+            _isLoadingHistory.value = true
+            gitManager.deleteBranch(branchName, force = true).onSuccess {
+                loadBranches()
+                _toastMessage.value = getApplication<Application>().getString(R.string.branch_deleted, branchName)
             }.onFailure {
                 _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, it.message)
             }
@@ -281,7 +314,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                     _currentDetailCommit.value = CommitInfo(
                         id = "CURRENT",
-                        shortId = "CUR",
+                        shortId = "CURRENT",
                         message = getApplication<Application>().getString(R.string.current_status),
                         author = "",
                         timestamp = System.currentTimeMillis()
