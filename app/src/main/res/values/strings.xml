@@ -28,6 +28,8 @@
     <string name="diff_removed">Removed (%d)</string>
     <string name="diff_updated">Updated (%d)</string>
     <string name="diff_notes">Notes Changed (%d)</string>
+    <string name="note_added">Added: %s</string>
+    <string name="note_removed_diff">Removed: %s</string>
     <string name="copy_adb_script">Copy ADB Script</string>
     <string name="push">Push</string>
     <string name="pull">Pull</string>

@@ -126,18 +126,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
                 val added = _apps.value.count { it.packageName !in lastMap }
                 val removed = lastApps.count { it.packageName !in currentMap }
-                val updated = _apps.value.count { app ->
-                    val old = lastMap[app.packageName]
-                    old != null && (old.versionCode != app.versionCode ||
-                            old.versionName != app.versionName)
+                var updated = 0
+                var noteChanged = 0
+
+                for (app in _apps.value) {
+                    val old = lastMap[app.packageName] ?: continue
+                    if (old.versionCode != app.versionCode || 
+                        old.versionName != app.versionName ||
+                        old.signatureSha256 != app.signatureSha256) {
+                        updated++
+                    } else if (old.note != app.note) {
+                        noteChanged++
+                    }
                 }
 
-                if (added == 0 && removed == 0 && updated == 0) {
+                if (added == 0 && removed == 0 && updated == 0 && noteChanged == 0) {
                     _toastMessage.value = getApplication<Application>().getString(R.string.no_changes)
                     return@launch
                 }
 
-                _pendingAutoMessage.value = gitManager.generateCommitMessage(added, removed, updated)
+                _pendingAutoMessage.value = gitManager.generateCommitMessage(added, removed, updated, noteChanged)
                 _showCommitDialog.value = true
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, e.message)

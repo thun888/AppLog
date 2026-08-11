@@ -28,6 +28,8 @@
     <string name="diff_removed">移除 (%d)</string>
     <string name="diff_updated">更新 (%d)</string>
     <string name="diff_notes">备注变更 (%d)</string>
+    <string name="note_added">新增备注: %s</string>
+    <string name="note_removed_diff">移除备注: %s</string>
     <string name="copy_adb_script">复制 ADB 脚本</string>
     <string name="push">推送</string>
     <string name="pull">拉取</string>

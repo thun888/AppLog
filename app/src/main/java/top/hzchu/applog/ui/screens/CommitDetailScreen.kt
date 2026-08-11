@@ -201,7 +201,7 @@ private fun DetailContentView(
                 )
             }
             items(diff.noteChanged) { (old, new) ->
-                top.hzchu.applog.ui.components.DiffItemUpdated(old = old, new = new)
+                top.hzchu.applog.ui.components.DiffItemNoteChanged(old = old, new = new)
             }
         }
 
