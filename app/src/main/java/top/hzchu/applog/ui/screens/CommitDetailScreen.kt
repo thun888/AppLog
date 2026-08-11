@@ -189,7 +189,23 @@ private fun DetailContentView(
             }
         }
 
-        // 4. Unchanged (The rest of the full list)
+        // 4. Note Changed
+        if (diff.noteChanged.isNotEmpty()) {
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = stringResource(R.string.diff_notes, diff.noteChanged.size),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.secondary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            items(diff.noteChanged) { (old, new) ->
+                top.hzchu.applog.ui.components.DiffItemUpdated(old = old, new = new)
+            }
+        }
+
+        // 5. Unchanged (The rest of the full list)
         if (unchangedApps.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))

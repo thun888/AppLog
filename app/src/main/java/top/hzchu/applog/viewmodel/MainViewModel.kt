@@ -223,8 +223,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _isComputingDiff.value = true
             try {
                 if (commitId == "CURRENT") {
-                    // Compare current scanned apps with HEAD
-                    val currentApps = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
+                    // Reuse cached apps if available, otherwise scan
+                    val currentApps = if (_apps.value.isNotEmpty()) {
+                        _apps.value
+                    } else {
+                        val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
+                        val notes = _notesMap.value
+                        scanned.map { app -> app.copy(note = notes[app.packageName] ?: "") }.also {
+                            _apps.value = it
+                        }
+                    }
+
                     val headContent = gitManager.getSnapshotContent().getOrThrow()
                     val headApps = AppListSerializer.deserialize(headContent)
                     
@@ -234,11 +243,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val added = currentApps.filter { it.packageName !in mapHead }
                     val removed = headApps.filter { it.packageName !in mapCurrent }
                     val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
+                    val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
+
                     for (appCurrent in currentApps) {
                         val appHead = mapHead[appCurrent.packageName] ?: continue
                         if (appHead.versionCode != appCurrent.versionCode || 
-                            appHead.versionName != appCurrent.versionName) {
+                            appHead.versionName != appCurrent.versionName ||
+                            appHead.signatureSha256 != appCurrent.signatureSha256) {
                             updated.add(appHead to appCurrent)
+                        } else if (appHead.note != appCurrent.note) {
+                            noteChanged.add(appHead to appCurrent)
                         }
                     }
 
@@ -250,7 +264,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         timestamp = System.currentTimeMillis()
                     )
                     _detailApps.value = currentApps
-                    _detailDiffResult.value = DiffResult(added, removed, updated)
+                    _detailDiffResult.value = DiffResult(
+                        added = added, 
+                        removed = removed, 
+                        updated = updated,
+                        noteChanged = noteChanged
+                    )
                 } else {
                     val commit = _commits.value.find { it.id == commitId } ?: return@launch
                     val parentId = gitManager.getParentCommitId(commitId)
@@ -271,17 +290,27 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     val added = currentApps.filter { it.packageName !in mapParent }
                     val removed = parentApps.filter { it.packageName !in mapCurrent }
                     val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
+                    val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
+
                     for (appCurrent in currentApps) {
                         val appParent = mapParent[appCurrent.packageName] ?: continue
                         if (appParent.versionCode != appCurrent.versionCode || 
-                            appParent.versionName != appCurrent.versionName) {
+                            appParent.versionName != appCurrent.versionName ||
+                            appParent.signatureSha256 != appCurrent.signatureSha256) {
                             updated.add(appParent to appCurrent)
+                        } else if (appParent.note != appCurrent.note) {
+                            noteChanged.add(appParent to appCurrent)
                         }
                     }
 
                     _currentDetailCommit.value = commit
                     _detailApps.value = currentApps
-                    _detailDiffResult.value = DiffResult(added, removed, updated)
+                    _detailDiffResult.value = DiffResult(
+                        added = added, 
+                        removed = removed, 
+                        updated = updated,
+                        noteChanged = noteChanged
+                    )
                 }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
