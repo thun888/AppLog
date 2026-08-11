@@ -41,6 +41,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val KEY_AUTO_SCAN = "auto_scan_on_start"
         private const val KEY_GIT_AUTHOR_NAME = "git_author_name"
         private const val KEY_GIT_AUTHOR_EMAIL = "git_author_email"
+        private const val KEY_SHOW_SYSTEM_APPS = "show_system_apps"
+        private const val KEY_SHOW_USER_APPS = "show_user_apps"
     }
 
     private val appScanner = AppScanner(application)
@@ -51,10 +53,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
     val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
 
-    private val _showSystemApps = MutableStateFlow(true)
+    private val _showSystemApps = MutableStateFlow(
+        application.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_SHOW_SYSTEM_APPS, true)
+    )
     val showSystemApps = _showSystemApps.asStateFlow()
 
-    private val _showUserApps = MutableStateFlow(true)
+    private val _showUserApps = MutableStateFlow(
+        application.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_SHOW_USER_APPS, true)
+    )
     val showUserApps = _showUserApps.asStateFlow()
 
     val filteredApps = combine(_apps, _showSystemApps, _showUserApps) { apps, showSystem, showUser ->
@@ -673,10 +681,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun toggleSystemApps(show: Boolean) {
         _showSystemApps.value = show
+        getApplication<Application>()
+            .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_SHOW_SYSTEM_APPS, show).apply()
     }
 
     fun toggleUserApps(show: Boolean) {
         _showUserApps.value = show
+        getApplication<Application>()
+            .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_SHOW_USER_APPS, show).apply()
     }
 
     override fun onCleared() {
