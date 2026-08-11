@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -55,6 +57,7 @@ fun HistoryScreen(
     val isLoading by viewModel.isLoadingHistory.collectAsState()
     val canLoadMore by viewModel.canLoadMoreHistory.collectAsState()
     val currentBranch by viewModel.currentBranch.collectAsState()
+    val unpushedCount by viewModel.unpushedCount.collectAsState()
 
     var showTagDialog by remember { mutableStateOf(false) }
     var taggingCommitId by remember { mutableStateOf("") }
@@ -82,11 +85,21 @@ fun HistoryScreen(
                 title = { 
                     Column {
                         Text(stringResource(R.string.tab_history))
-                        Text(
-                            text = currentBranch,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = currentBranch,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (unpushedCount > 0) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = stringResource(R.string.unpushed_count, unpushedCount),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
                     }
                 },
                 actions = {

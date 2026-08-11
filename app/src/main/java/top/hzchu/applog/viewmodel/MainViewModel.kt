@@ -84,6 +84,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentBranch = MutableStateFlow(GitManager.DEFAULT_BRANCH)
     val currentBranch: StateFlow<String> = _currentBranch.asStateFlow()
 
+    private val _unpushedCount = MutableStateFlow(0)
+    val unpushedCount: StateFlow<Int> = _unpushedCount.asStateFlow()
+
     private val _diffResult = MutableStateFlow<DiffResult?>(null)
     val diffResult: StateFlow<DiffResult?> = _diffResult.asStateFlow()
 
@@ -281,6 +284,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _canLoadMoreHistory.value = false
         }
         _currentBranch.value = gitManager.getCurrentBranch()
+        _unpushedCount.value = gitManager.getUnpushedCount().getOrDefault(0)
         _isLoadingHistory.value = false
     }
 
@@ -506,8 +510,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _toastMessage.value = getApplication<Application>().getString(R.string.pushing)
             try {
                 val result = gitManager.pushToRemote(remoteUrl, username, password, force)
-                _toastMessage.value = if (result.isSuccess) getApplication<Application>().getString(R.string.push_success) 
-                    else getApplication<Application>().getString(R.string.push_error, result.exceptionOrNull()?.message)
+                if (result.isSuccess) {
+                    _toastMessage.value = getApplication<Application>().getString(R.string.push_success)
+                    loadHistory()
+                } else {
+                    _toastMessage.value = getApplication<Application>().getString(R.string.push_error, result.exceptionOrNull()?.message)
+                }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.push_error, e.message)
             }

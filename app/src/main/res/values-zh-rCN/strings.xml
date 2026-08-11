@@ -30,6 +30,7 @@
     <string name="version_format">v%1$s (%2$d)</string>
     <string name="version_was">原版本 v%1$s (%2$d)</string>
     <string name="no_commits">暂无提交记录</string>
+    <string name="unpushed_count">%d 个待推送</string>
     <string name="scan_to_start">扫描并提交以开始</string>
     <string name="select_commits_hint">选择两个提交以进行对比</string>
     <string name="no_diff">暂无对比结果</string>

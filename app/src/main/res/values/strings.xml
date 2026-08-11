@@ -30,6 +30,7 @@
     <string name="version_format">v%1$s (%2$d)</string>
     <string name="version_was">was v%1$s (%2$d)</string>
     <string name="no_commits">No commits yet</string>
+    <string name="unpushed_count">%d unpushed</string>
     <string name="scan_to_start">Scan and commit to get started</string>
     <string name="select_commits_hint">Select 2 commits for diff comparison</string>
     <string name="no_diff">No diff to show</string>

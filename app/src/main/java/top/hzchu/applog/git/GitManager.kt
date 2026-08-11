@@ -235,8 +235,15 @@ class GitManager(private val context: Context) {
                 val specStr = if (force) "+refs/heads/$currentBranch" else "refs/heads/$currentBranch"
                 pushCommand.setRefSpecs(RefSpec("$specStr:refs/heads/$currentBranch"))
                 
-                val results = pushCommand.call()
-                // Check for failures in push results if needed
+                pushCommand.call()
+                
+                // Update remote-tracking branch locally so getUnpushedCount() is accurate
+                g.fetch()
+                    .setRemote(remoteName)
+                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(username, password))
+                    .setRefSpecs(RefSpec("refs/heads/$currentBranch:refs/remotes/$remoteName/$currentBranch"))
+                    .call()
+                
                 Result.success(Unit)
             } ?: Result.failure(Exception("Repo not initialized"))
         } catch (e: Exception) {
@@ -311,6 +318,26 @@ class GitManager(private val context: Context) {
             git?.close()
         } catch (_: Exception) {
             // ignore
+        }
+    }
+
+    suspend fun getUnpushedCount(): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            git?.use { g ->
+                val repo = g.repository
+                val currentBranch = repo.branch ?: return@use Result.success(0)
+                val localRef = repo.resolve(currentBranch) ?: return@use Result.success(0)
+                val remoteRef = repo.resolve("$REMOTE_NAME/$currentBranch") ?: return@use Result.success(0)
+
+                val log = g.log().addRange(remoteRef, localRef).call()
+                var count = 0
+                for (commit in log) {
+                    count++
+                }
+                Result.success(count)
+            } ?: Result.success(0)
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 
