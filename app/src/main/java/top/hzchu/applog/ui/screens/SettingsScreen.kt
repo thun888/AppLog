@@ -80,14 +80,7 @@ fun SettingsScreen(
             // General Settings
             Text(stringResource(R.string.general_settings), style = MaterialTheme.typography.titleMedium)
 
-            ListItem(
-                headlineContent = { Text(stringResource(R.string.branch_management)) },
-                leadingContent = { Icon(Icons.Filled.AccountTree, contentDescription = null) },
-                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
-                modifier = Modifier.clickable { onNavigateToBranches() }
-            )
 
-            HorizontalDivider()
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
@@ -103,6 +96,8 @@ fun SettingsScreen(
                     }
                 )
             }
+
+            HorizontalDivider()
 
             // Debounce Settings
             Text(stringResource(R.string.debounce_settings), style = MaterialTheme.typography.titleMedium)
@@ -125,6 +120,8 @@ fun SettingsScreen(
                 Text(stringResource(R.string.save_threshold))
             }
 
+            HorizontalDivider()
+
             // Git Identity
             Text(stringResource(R.string.git_identity), style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
@@ -144,6 +141,8 @@ fun SettingsScreen(
             }) {
                 Text(stringResource(R.string.save_git_identity))
             }
+
+            HorizontalDivider()
 
             // Remote Config
             Text(stringResource(R.string.remote_repository), style = MaterialTheme.typography.titleMedium)
@@ -180,6 +179,15 @@ fun SettingsScreen(
             }) {
                 Text(stringResource(R.string.save_remote_config))
             }
+
+            HorizontalDivider()
+
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.branch_management)) },
+                leadingContent = { Icon(Icons.Filled.AccountTree, contentDescription = null) },
+                trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
+                modifier = Modifier.clickable { onNavigateToBranches() }
+            )
 
             // Push / Pull
             Row(
