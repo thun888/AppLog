@@ -123,6 +123,7 @@ fun AppLogApp() {
     var previousAppForDiff by remember { mutableStateOf<AppInfo?>(null) }
     var isDetailEditable by remember { mutableStateOf(true) }
     var editingNoteText by remember { mutableStateOf("") }
+    var editingTagsText by remember { mutableStateOf("") }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -162,6 +163,7 @@ fun AppLogApp() {
                     previousAppForDiff = prev
                     isDetailEditable = false
                     editingNoteText = app.note
+                    editingTagsText = app.tags
                 },
                 modifier = Modifier.padding(innerPadding)
             )
@@ -180,6 +182,7 @@ fun AppLogApp() {
                         previousAppForDiff = prev
                         isDetailEditable = true
                         editingNoteText = app.note
+                        editingTagsText = app.tags
                     },
                     modifier = Modifier.padding(innerPadding)
                 )
@@ -256,11 +259,24 @@ fun AppLogApp() {
                             label = { Text(stringResource(R.string.app_info_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = editingTagsText,
+                            onValueChange = { editingTagsText = it },
+                            label = { Text(stringResource(R.string.app_info_tags)) },
+                            placeholder = { Text(stringResource(R.string.tags_placeholder)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     } else {
                         AppDetailRow(
                             label = stringResource(R.string.app_info_note),
                             value = app.note.ifEmpty { "无" },
                             isChanged = prev != null && prev.note != app.note
+                        )
+                        AppDetailRow(
+                            label = stringResource(R.string.app_info_tags),
+                            value = app.tags.ifEmpty { "无" },
+                            isChanged = prev != null && prev.tags != app.tags
                         )
                     }
                 }
@@ -270,6 +286,7 @@ fun AppLogApp() {
                     TextButton(
                         onClick = {
                             viewModel.updateNote(app.packageName, editingNoteText)
+                            viewModel.updateTags(app.packageName, editingTagsText)
                             editingApp = null
                         }
                     ) {

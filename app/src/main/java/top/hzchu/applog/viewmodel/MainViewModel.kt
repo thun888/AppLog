@@ -159,10 +159,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _notesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val notesMap: StateFlow<Map<String, String>> = _notesMap.asStateFlow()
 
+    private val _tagsMap = MutableStateFlow<Map<String, String>>(emptyMap())
+    val tagsMap: StateFlow<Map<String, String>> = _tagsMap.asStateFlow()
+
     init {
         viewModelScope.launch {
             gitManager.init()
-            loadNotesFromWorkingFile()
+            loadMetadataFromWorkingFile()
             loadBranches()
             loadHistory()
             if (getAutoScanOnStart()) {
@@ -193,32 +196,36 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val removed = previousApps.filter { it.packageName !in mapCurr }
         val updated = mutableListOf<Pair<AppInfo, AppInfo>>()
         val noteChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
+        val tagsChanged = mutableListOf<Pair<AppInfo, AppInfo>>()
 
         for (appCurr in currentApps) {
             val appPrev = mapPrev[appCurr.packageName] ?: continue
             if (isAppVersionChanged(appPrev, appCurr)) {
                 updated.add(appPrev to appCurr)
+            } else if (appPrev.tags != appCurr.tags) {
+                tagsChanged.add(appPrev to appCurr)
             } else if (appPrev.note != appCurr.note) {
                 noteChanged.add(appPrev to appCurr)
             }
         }
 
-        return DiffResult(added = added, removed = removed, updated = updated, noteChanged = noteChanged)
+        return DiffResult(added = added, removed = removed, updated = updated, noteChanged = noteChanged, tagsChanged = tagsChanged)
     }
 
     private data class DiffCounts(
         val added: Int = 0,
         val removed: Int = 0,
         val updated: Int = 0,
-        val noteChanged: Int = 0
+        val noteChanged: Int = 0,
+        val tagsChanged: Int = 0
     ) {
-        val hasChanges get() = added > 0 || removed > 0 || updated > 0 || noteChanged > 0
+        val hasChanges get() = added > 0 || removed > 0 || updated > 0 || noteChanged > 0 || tagsChanged > 0
     }
 
     private suspend fun computeDiffCounts(): DiffCounts {
         val lastApps = getLastSnapshotApps()
         val diff = computeDiff(_apps.value, lastApps)
-        return DiffCounts(diff.added.size, diff.removed.size, diff.updated.size, diff.noteChanged.size)
+        return DiffCounts(diff.added.size, diff.removed.size, diff.updated.size, diff.noteChanged.size, diff.tagsChanged.size)
     }
 
     private fun isAppVersionChanged(oldApp: AppInfo, newApp: AppInfo): Boolean {
@@ -252,7 +259,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 _pendingAutoMessage.value = gitManager.generateCommitMessage(
-                    counts.added, counts.removed, counts.updated, counts.noteChanged
+                    counts.added, counts.removed, counts.updated, counts.noteChanged, counts.tagsChanged
                 )
                 _showCommitDialog.value = true
             } catch (e: Exception) {
@@ -264,9 +271,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private suspend fun scanAndUpdateApps() {
         _isScanning.value = true
         try {
+            val notes = _notesMap.value
+            val tags = _tagsMap.value
             val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
             _apps.value = scanned.map { app ->
-                app.copy(note = _notesMap.value[app.packageName] ?: "")
+                app.copy(
+                    note = notes[app.packageName] ?: "",
+                    tags = tags[app.packageName] ?: ""
+                )
             }
         } finally {
             _isScanning.value = false
@@ -344,7 +356,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         _currentBranch.value = gitManager.getCurrentBranch()
         _unpushedCount.value = gitManager.getUnpushedCount().getOrDefault(0)
-        loadNotesFromWorkingFile()
+        loadMetadataFromWorkingFile()
         _isLoadingHistory.value = false
     }
 
@@ -413,7 +425,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     } else {
                         val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
                         val notes = _notesMap.value
-                        scanned.map { app -> app.copy(note = notes[app.packageName] ?: "") }.also {
+                        val tags = _tagsMap.value
+                        scanned.map { app -> app.copy(note = notes[app.packageName] ?: "", tags = tags[app.packageName] ?: "") }.also {
                             _apps.value = it
                         }
                     }
@@ -472,12 +485,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // --- Notes ---
+    // --- Notes & Tags ---
 
     /**
-     * 从 Git 工作目录的 apps_snapshot.txt 加载备注
+     * 标签确定性归一化：按逗号分割、去空白、排序、去重、重新拼接
      */
-    private fun loadNotesFromWorkingFile() {
+    private fun normalizeTags(raw: String): String {
+        return raw.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sortedBy { it.lowercase() }
+            .joinToString(", ")
+    }
+
+    /**
+     * 从 Git 工作目录的 apps_snapshot.txt 加载备注和标签
+     */
+    private fun loadMetadataFromWorkingFile() {
         try {
             val file = java.io.File(
                 getApplication<Application>().filesDir,
@@ -488,16 +513,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _notesMap.value = apps
                 .filter { it.note.isNotEmpty() }
                 .associate { it.packageName to it.note }
+            _tagsMap.value = apps
+                .filter { it.tags.isNotEmpty() }
+                .associate { it.packageName to it.tags }
         } catch (_: Exception) {
             // 文件不存在或损坏时，保持现有 map
         }
     }
 
     /**
-     * 将 _notesMap 中的备注写回工作文件
-     * 仅更新 note 字段，保留文件中其他应用字段不变
+     * 将内存中的备注和标签写回工作文件
+     * 仅更新 note 和 tags 字段，保留文件中其他应用字段不变
      */
-    private fun syncNotesToWorkingFile() {
+    private fun syncMetadataToWorkingFile() {
         try {
             val file = java.io.File(
                 getApplication<Application>().filesDir,
@@ -509,9 +537,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 emptyList()
             }
             val notes = _notesMap.value
+            val tags = _tagsMap.value
             val updatedApps = existingApps.map { app ->
+                var updated = app
                 val newNote = notes[app.packageName]
-                if (newNote != null) app.copy(note = newNote) else app
+                if (newNote != null) updated = updated.copy(note = newNote)
+                val newTags = tags[app.packageName]
+                if (newTags != null) updated = updated.copy(tags = normalizeTags(newTags))
+                updated
             }
             file.writeText(AppListSerializer.serialize(updatedApps))
         } catch (_: Exception) {
@@ -524,9 +557,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (note.isBlank()) currentNotes.remove(packageName)
         else currentNotes[packageName] = note
         _notesMap.value = currentNotes
-        syncNotesToWorkingFile()
+        syncMetadataToWorkingFile()
         _apps.value = _apps.value.map { app ->
             if (app.packageName == packageName) app.copy(note = note) else app
+        }
+    }
+
+    fun updateTags(packageName: String, tags: String) {
+        val normalized = normalizeTags(tags)
+        val currentTags = _tagsMap.value.toMutableMap()
+        if (normalized.isBlank()) currentTags.remove(packageName)
+        else currentTags[packageName] = normalized
+        _tagsMap.value = currentTags
+        syncMetadataToWorkingFile()
+        _apps.value = _apps.value.map { app ->
+            if (app.packageName == packageName) app.copy(tags = normalized) else app
         }
     }
 

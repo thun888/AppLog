@@ -107,4 +107,10 @@
     <string name="diff_summary_removed">移除 %d 个应用</string>
     <string name="diff_summary_updated">%d 个应用已更新</string>
     <string name="diff_summary_notes">修改 %d 条备注</string>
+    <string name="diff_summary_tags">修改 %d 个标签</string>
+    <string name="diff_tags">标签变更 (%d)</string>
+    <string name="app_info_tags">标签:</string>
+    <string name="tags_added">新增标签: %s</string>
+    <string name="tags_removed_diff">移除标签: %s</string>
+    <string name="tags_placeholder">标签1, 标签2</string>
 </resources>

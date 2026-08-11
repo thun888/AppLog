@@ -284,12 +284,13 @@ class GitManager(private val context: Context) {
         }
     }
 
-    fun generateCommitMessage(added: Int, removed: Int, updated: Int, notes: Int = 0): String {
+    fun generateCommitMessage(added: Int, removed: Int, updated: Int, notes: Int = 0, tags: Int = 0): String {
         val parts = mutableListOf<String>()
         if (added > 0) parts.add("+$added apps")
         if (removed > 0) parts.add("-$removed apps")
         if (updated > 0) parts.add("$updated updated")
         if (notes > 0) parts.add("$notes notes")
+        if (tags > 0) parts.add("$tags tags")
         val summary = parts.joinToString(", ")
         return "[AutoCommit] $summary"
     }

@@ -107,4 +107,10 @@
     <string name="diff_summary_removed">delete %d apps</string>
     <string name="diff_summary_updated">%d updated</string>
     <string name="diff_summary_notes">%d notes</string>
+    <string name="diff_summary_tags">%d tags</string>
+    <string name="diff_tags">Tags Changed (%d)</string>
+    <string name="app_info_tags">Tags:</string>
+    <string name="tags_added">Added tags: %s</string>
+    <string name="tags_removed_diff">Removed tags: %s</string>
+    <string name="tags_placeholder">tag1, tag2</string>
 </resources>

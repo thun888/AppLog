@@ -134,6 +134,7 @@ private fun DetailContentView(
         if (diff.removed.isNotEmpty()) add(stringResource(R.string.diff_summary_removed, diff.removed.size))
         if (diff.updated.isNotEmpty()) add(stringResource(R.string.diff_summary_updated, diff.updated.size))
         if (diff.noteChanged.isNotEmpty()) add(stringResource(R.string.diff_summary_notes, diff.noteChanged.size))
+        if (diff.tagsChanged.isNotEmpty()) add(stringResource(R.string.diff_summary_tags, diff.tagsChanged.size))
     }.joinToString(", ").ifEmpty { stringResource(R.string.no_changes) }
 
     LazyColumn(
@@ -228,14 +229,34 @@ private fun DetailContentView(
             }
             items(diff.noteChanged) { (old, new) ->
                 top.hzchu.applog.ui.components.DiffItemNoteChanged(
-                    old = old, 
-                    new = new, 
+                    old = old,
+                    new = new,
                     onClick = { onAppClick(new, old) }
                 )
             }
         }
 
-        // 5. Unchanged (The rest of the full list)
+        // 5. Tags Changed
+        if (diff.tagsChanged.isNotEmpty()) {
+            item {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = stringResource(R.string.diff_tags, diff.tagsChanged.size),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = MaterialTheme.colorScheme.tertiary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            items(diff.tagsChanged) { (old, new) ->
+                top.hzchu.applog.ui.components.DiffItemTagsChanged(
+                    old = old,
+                    new = new,
+                    onClick = { onAppClick(new, old) }
+                )
+            }
+        }
+
+        // 6. Unchanged (The rest of the full list)
         item {
             val unchangedCount = androidx.compose.runtime.remember(allApps, addedPackages, updatedPackages, showSystem, showUser) {
                 allApps.count { it.packageName !in addedPackages && it.packageName !in updatedPackages && it.shouldShow() }

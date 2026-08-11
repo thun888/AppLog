@@ -11,18 +11,21 @@ data class DiffResult(
     /** 更新的应用: Pair(旧版本, 新版本) */
     val updated: List<Pair<AppInfo, AppInfo>> = emptyList(),
     /** 备注变更的应用: Pair(旧版, 新版) */
-    val noteChanged: List<Pair<AppInfo, AppInfo>> = emptyList()
+    val noteChanged: List<Pair<AppInfo, AppInfo>> = emptyList(),
+    /** 标签变更的应用: Pair(旧版, 新版) */
+    val tagsChanged: List<Pair<AppInfo, AppInfo>> = emptyList()
 ) {
     val isEmpty: Boolean
-        get() = added.isEmpty() && removed.isEmpty() && updated.isEmpty() && noteChanged.isEmpty()
+        get() = added.isEmpty() && removed.isEmpty() && updated.isEmpty() && noteChanged.isEmpty() && tagsChanged.isEmpty()
 
     val totalChanges: Int
-        get() = added.size + removed.size + updated.size + noteChanged.size
+        get() = added.size + removed.size + updated.size + noteChanged.size + tagsChanged.size
 
     enum class ChangeType {
         ADDED,
         REMOVED,
         UPDATED,
-        NOTE_CHANGED
+        NOTE_CHANGED,
+        TAGS_CHANGED
     }
 }

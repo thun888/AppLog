@@ -251,3 +251,59 @@ fun DiffItemNoteChanged(
         }
     }
 }
+
+@Composable
+fun DiffItemTagsChanged(
+    old: AppInfo,
+    new: AppInfo,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Filled.EditNote,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.tertiary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        AppIcon(
+            packageName = new.packageName,
+            appType = new.appType,
+            iconSize = 32.dp
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Column {
+            Text(
+                text = new.appName,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = new.packageName,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                style = MaterialTheme.typography.bodySmall
+            )
+            Text(
+                text = if (old.tags.isEmpty()) {
+                    stringResource(R.string.tags_added, new.tags)
+                } else if (new.tags.isEmpty()) {
+                    stringResource(R.string.tags_removed_diff, old.tags)
+                } else {
+                    "${old.tags} \u2192 ${new.tags}"
+                },
+                color = MaterialTheme.colorScheme.tertiary,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}

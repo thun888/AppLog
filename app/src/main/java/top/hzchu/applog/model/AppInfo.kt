@@ -2,7 +2,7 @@ package top.hzchu.applog.model
 
 /**
  * 应用元数据模型
- * 格式: packageName|appName|versionName|versionCode|firstInstallTime|lastUpdateTime|installerPackageName|appType|signatureSha256|note
+ * 格式: packageName|appName|versionName|versionCode|firstInstallTime|lastUpdateTime|installerPackageName|appType|signatureSha256|note|tags
  */
 data class AppInfo(
     val packageName: String,
@@ -14,7 +14,8 @@ data class AppInfo(
     val installerPackageName: String = "",
     val appType: AppType = AppType.THIRD_PARTY,
     val signatureSha256: String = "",
-    val note: String = ""
+    val note: String = "",
+    val tags: String = ""
 ) {
     enum class AppType {
         SYSTEM,
@@ -42,7 +43,8 @@ data class AppInfo(
                     installerPackageName = parts[6],
                     appType = try { AppType.valueOf(parts[7]) } catch (_: Exception) { AppType.THIRD_PARTY },
                     signatureSha256 = parts[8],
-                    note = parts.getOrElse(9) { "" }.replace("\\|", "|")
+                    note = parts.getOrElse(9) { "" }.replace("\\|", "|"),
+                    tags = parts.getOrElse(10) { "" }.replace("\\|", "|")
                 )
             } catch (e: Exception) {
                 null
@@ -63,7 +65,8 @@ data class AppInfo(
                 app.installerPackageName,
                 app.appType.name,
                 app.signatureSha256,
-                app.note.replace("|", "\\|")
+                app.note.replace("|", "\\|"),
+                app.tags.replace("|", "\\|")
             ).joinToString(FIELD_DELIMITER)
         }
     }
