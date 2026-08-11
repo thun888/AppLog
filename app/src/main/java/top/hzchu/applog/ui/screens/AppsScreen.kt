@@ -4,18 +4,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -23,10 +31,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import top.hzchu.applog.R
 import top.hzchu.applog.ui.components.AppItem
 import top.hzchu.applog.viewmodel.MainViewModel
@@ -38,8 +49,12 @@ fun AppsScreen(
     onAppClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val apps by viewModel.apps.collectAsState()
+    val apps by viewModel.filteredApps.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
+    val showSystem by viewModel.showSystemApps.collectAsState()
+    val showUser by viewModel.showUserApps.collectAsState()
+
+    var showFilterMenu by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -47,7 +62,37 @@ fun AppsScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.tab_apps)) },
                 actions = {
-                    androidx.compose.material3.IconButton(onClick = { viewModel.scanApps() }) {
+                    Box {
+                        IconButton(onClick = { showFilterMenu = true }) {
+                            Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.filter))
+                        }
+                        DropdownMenu(
+                            expanded = showFilterMenu,
+                            onDismissRequest = { showFilterMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = showSystem, onCheckedChange = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(stringResource(R.string.show_system_apps))
+                                    }
+                                },
+                                onClick = { viewModel.toggleSystemApps(!showSystem) }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(checked = showUser, onCheckedChange = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(stringResource(R.string.show_user_apps))
+                                    }
+                                },
+                                onClick = { viewModel.toggleUserApps(!showUser) }
+                            )
+                        }
+                    }
+                    IconButton(onClick = { viewModel.scanApps() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
                     }
                 }

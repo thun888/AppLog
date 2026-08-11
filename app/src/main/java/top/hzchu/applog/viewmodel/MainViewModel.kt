@@ -6,8 +6,11 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.hzchu.applog.R
@@ -28,6 +31,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _apps = MutableStateFlow<List<AppInfo>>(emptyList())
     val apps: StateFlow<List<AppInfo>> = _apps.asStateFlow()
+
+    private val _showSystemApps = MutableStateFlow(true)
+    val showSystemApps = _showSystemApps.asStateFlow()
+
+    private val _showUserApps = MutableStateFlow(true)
+    val showUserApps = _showUserApps.asStateFlow()
+
+    val filteredApps = combine(_apps, _showSystemApps, _showUserApps) { apps, showSystem, showUser ->
+        apps.filter { app ->
+            if (app.appType == AppInfo.AppType.SYSTEM) showSystem else showUser
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
@@ -489,6 +504,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun clearToast() {
         _toastMessage.value = null
+    }
+
+    fun toggleSystemApps(show: Boolean) {
+        _showSystemApps.value = show
+    }
+
+    fun toggleUserApps(show: Boolean) {
+        _showUserApps.value = show
     }
 
     override fun onCleared() {
