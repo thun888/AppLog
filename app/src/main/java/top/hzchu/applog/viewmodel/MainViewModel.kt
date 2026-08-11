@@ -175,66 +175,89 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun scanApps() {
         viewModelScope.launch {
-            _isScanning.value = true
             try {
-                val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
-                val notes = _notesMap.value
-                _apps.value = scanned.map { app ->
-                    app.copy(note = notes[app.packageName] ?: "")
-                }
+                scanAndUpdateApps()
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.scan_failed, e.message)
-            } finally {
-                _isScanning.value = false
             }
         }
     }
 
     // --- Git Operations ---
 
+    private data class DiffCounts(
+        val added: Int = 0,
+        val removed: Int = 0,
+        val updated: Int = 0,
+        val noteChanged: Int = 0
+    ) {
+        val hasChanges get() = added > 0 || removed > 0 || updated > 0 || noteChanged > 0
+    }
+
+    private suspend fun computeDiffCounts(): DiffCounts {
+        val lastContent = gitManager.getSnapshotContent().getOrDefault("")
+        val lastApps = AppListSerializer.deserialize(lastContent)
+        val lastMap = AppListSerializer.buildAppMap(lastApps)
+        val currentMap = AppListSerializer.buildAppMap(_apps.value)
+
+        val added = _apps.value.count { it.packageName !in lastMap }
+        val removed = lastApps.count { it.packageName !in currentMap }
+        var updated = 0
+        var noteChanged = 0
+
+        for (app in _apps.value) {
+            val old = lastMap[app.packageName] ?: continue
+            if (old.versionCode != app.versionCode ||
+                old.versionName != app.versionName ||
+                old.signatureSha256 != app.signatureSha256) {
+                updated++
+            } else if (old.note != app.note) {
+                noteChanged++
+            }
+        }
+
+        return DiffCounts(added, removed, updated, noteChanged)
+    }
+
     fun prepareCommit() {
         viewModelScope.launch {
-            _isScanning.value = true
             try {
                 if (_apps.value.isEmpty()) {
-                    val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
-                    _apps.value = scanned.map { app ->
-                        app.copy(note = _notesMap.value[app.packageName] ?: "")
-                    }
-                }
-                val lastContent = gitManager.getSnapshotContent().getOrDefault("")
-                val lastApps = AppListSerializer.deserialize(lastContent)
-                val lastMap = AppListSerializer.buildAppMap(lastApps)
-                val currentMap = AppListSerializer.buildAppMap(_apps.value)
-
-                val added = _apps.value.count { it.packageName !in lastMap }
-                val removed = lastApps.count { it.packageName !in currentMap }
-                var updated = 0
-                var noteChanged = 0
-
-                for (app in _apps.value) {
-                    val old = lastMap[app.packageName] ?: continue
-                    if (old.versionCode != app.versionCode || 
-                        old.versionName != app.versionName ||
-                        old.signatureSha256 != app.signatureSha256) {
-                        updated++
-                    } else if (old.note != app.note) {
-                        noteChanged++
-                    }
+                    scanAndUpdateApps()
                 }
 
-                if (added == 0 && removed == 0 && updated == 0 && noteChanged == 0) {
+                var counts = computeDiffCounts()
+
+                // 无变更但数据可能已过时 → 刷新后重试一次
+                if (!counts.hasChanges && _apps.value.isNotEmpty()) {
+                    scanAndUpdateApps()
+                    counts = computeDiffCounts()
+                }
+
+                if (!counts.hasChanges) {
                     _toastMessage.value = getApplication<Application>().getString(R.string.no_changes)
                     return@launch
                 }
 
-                _pendingAutoMessage.value = gitManager.generateCommitMessage(added, removed, updated, noteChanged)
+                _pendingAutoMessage.value = gitManager.generateCommitMessage(
+                    counts.added, counts.removed, counts.updated, counts.noteChanged
+                )
                 _showCommitDialog.value = true
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, e.message)
-            } finally {
-                _isScanning.value = false
             }
+        }
+    }
+
+    private suspend fun scanAndUpdateApps() {
+        _isScanning.value = true
+        try {
+            val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
+            _apps.value = scanned.map { app ->
+                app.copy(note = _notesMap.value[app.packageName] ?: "")
+            }
+        } finally {
+            _isScanning.value = false
         }
     }
 
@@ -247,7 +270,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _showCommitDialog.value = false
 
         viewModelScope.launch {
-            _isScanning.value = true
             try {
                 val currentContent = AppListSerializer.serialize(_apps.value)
                 val (authorName, authorEmail) = getGitIdentity()
@@ -271,8 +293,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, e.message)
-            } finally {
-                _isScanning.value = false
             }
         }
     }

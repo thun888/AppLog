@@ -126,11 +126,6 @@ private fun DetailContentView(
 
     fun AppInfo.shouldShow() = if (appType == AppInfo.AppType.SYSTEM) showSystem else showUser
 
-    val addedFiltered = diff.added.filter { it.shouldShow() }
-    val updatedFiltered = diff.updated.filter { it.second.shouldShow() }
-    val removedFiltered = diff.removed.filter { it.shouldShow() }
-    val noteChangedFiltered = diff.noteChanged.filter { it.second.shouldShow() }
-
     val addedPackages = diff.added.map { it.packageName }.toSet()
     val updatedPackages = diff.updated.map { it.second.packageName }.toSet()
 
@@ -155,83 +150,83 @@ private fun DetailContentView(
         }
 
         // 1. Added
-        if (addedFiltered.isNotEmpty()) {
+        if (diff.added.isNotEmpty()) {
             item {
                 Text(
-                    text = stringResource(R.string.diff_added, addedFiltered.size),
+                    text = stringResource(R.string.diff_added, diff.added.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffAddedColor,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(addedFiltered) { app -> 
+            items(diff.added) { app -> 
                 DiffItemAdded(app = app, onClick = { onAppClick(app, null) }) 
             }
         }
 
         // 2. Updated
-        if (updatedFiltered.isNotEmpty()) {
+        if (diff.updated.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_updated, updatedFiltered.size),
+                    text = stringResource(R.string.diff_updated, diff.updated.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffUpdatedColor,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(updatedFiltered) { (old, new) ->
+            items(diff.updated) { (old, new) ->
                 DiffItemUpdated(old = old, new = new, onClick = { onAppClick(new, old) })
             }
         }
 
         // 3. Removed
-        if (removedFiltered.isNotEmpty()) {
+        if (diff.removed.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_removed, removedFiltered.size),
+                    text = stringResource(R.string.diff_removed, diff.removed.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffRemovedColor,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(removedFiltered) { app -> 
+            items(diff.removed) { app -> 
                 DiffItemRemoved(app = app, onClick = { onAppClick(app, null) }) 
             }
-            item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            viewModel.generateRestoreScript(removedFiltered)
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = DiffRemovedColor
-                        )
-                    ) {
-                        Icon(Icons.Filled.ContentCopy, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(stringResource(R.string.copy_adb_script))
-                    }
-                }
-            }
+//            item {
+//                Row(
+//                    modifier = Modifier.fillMaxWidth().padding(12.dp),
+//                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+//                ) {
+//                    Button(
+//                        onClick = {
+//                            viewModel.generateRestoreScript(diff.removed)
+//                        },
+//                        colors = ButtonDefaults.buttonColors(
+//                            containerColor = DiffRemovedColor
+//                        )
+//                    ) {
+//                        Icon(Icons.Filled.ContentCopy, contentDescription = null)
+//                        Spacer(modifier = Modifier.width(4.dp))
+//                        Text(stringResource(R.string.copy_adb_script))
+//                    }
+//                }
+//            }
         }
 
         // 4. Note Changed
-        if (noteChangedFiltered.isNotEmpty()) {
+        if (diff.noteChanged.isNotEmpty()) {
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_notes, noteChangedFiltered.size),
+                    text = stringResource(R.string.diff_notes, diff.noteChanged.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(noteChangedFiltered) { (old, new) ->
+            items(diff.noteChanged) { (old, new) ->
                 top.hzchu.applog.ui.components.DiffItemNoteChanged(
                     old = old, 
                     new = new, 
