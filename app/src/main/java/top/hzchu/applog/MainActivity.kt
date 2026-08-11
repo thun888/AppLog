@@ -7,14 +7,21 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -33,10 +40,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import top.hzchu.applog.model.AppInfo
+import top.hzchu.applog.ui.components.DiffUpdatedColor
 import top.hzchu.applog.ui.navigation.NavigationTab
 import top.hzchu.applog.ui.screens.AppsScreen
 import top.hzchu.applog.ui.screens.BranchScreen
@@ -45,6 +56,9 @@ import top.hzchu.applog.ui.screens.HistoryScreen
 import top.hzchu.applog.ui.screens.SettingsScreen
 import top.hzchu.applog.ui.theme.AppLogTheme
 import top.hzchu.applog.viewmodel.MainViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,6 +69,23 @@ class MainActivity : ComponentActivity() {
                 AppLogApp()
             }
         }
+    }
+}
+
+@Composable
+fun AppDetailRow(label: String, value: String, isChanged: Boolean = false) {
+    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (isChanged) DiffUpdatedColor else MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = if (isChanged) FontWeight.Bold else FontWeight.Normal,
+            color = if (isChanged) DiffUpdatedColor else MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -88,7 +119,9 @@ fun AppLogApp() {
         }
     }
 
-    var editingPackage by remember { mutableStateOf<String?>(null) }
+    var editingApp by remember { mutableStateOf<AppInfo?>(null) }
+    var previousAppForDiff by remember { mutableStateOf<AppInfo?>(null) }
+    var isDetailEditable by remember { mutableStateOf(true) }
     var editingNoteText by remember { mutableStateOf("") }
 
     Scaffold(
@@ -124,6 +157,12 @@ fun AppLogApp() {
                 viewModel = viewModel,
                 commitId = selectedCommitId!!,
                 onBack = { selectedCommitId = null },
+                onAppClick = { app, prev ->
+                    editingApp = app
+                    previousAppForDiff = prev
+                    isDetailEditable = false
+                    editingNoteText = app.note
+                },
                 modifier = Modifier.padding(innerPadding)
             )
         } else if (isManagingBranches) {
@@ -136,9 +175,11 @@ fun AppLogApp() {
             when (selectedTab) {
                 NavigationTab.APPS -> AppsScreen(
                     viewModel = viewModel,
-                    onAppClick = { pkg ->
-                        editingPackage = pkg
-                        editingNoteText = viewModel.notesMap.value[pkg] ?: ""
+                    onAppClick = { app, prev ->
+                        editingApp = app
+                        previousAppForDiff = prev
+                        isDetailEditable = true
+                        editingNoteText = viewModel.notesMap.value[app.packageName] ?: ""
                     },
                     modifier = Modifier.padding(innerPadding)
                 )
@@ -160,34 +201,93 @@ fun AppLogApp() {
     }
 
     // Note editing dialog
-    if (editingPackage != null) {
-        val pkg = editingPackage!!
+    if (editingApp != null) {
+        val app = editingApp!!
+        val prev = previousAppForDiff
+        val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
         AlertDialog(
-            onDismissRequest = { editingPackage = null },
-            title = { Text(stringResource(R.string.edit_note)) },
+            onDismissRequest = { editingApp = null },
+            title = { Text(app.appName) },
             text = {
-                OutlinedTextField(
-                    value = editingNoteText,
-                    onValueChange = { editingNoteText = it },
-                    label = { Text(stringResource(R.string.note_for, pkg)) },
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    AppDetailRow(
+                        label = stringResource(R.string.app_info_package),
+                        value = app.packageName,
+                        isChanged = prev != null && prev.packageName != app.packageName
+                    )
+                    AppDetailRow(
+                        label = stringResource(R.string.app_info_version),
+                        value = stringResource(R.string.version_format, app.versionName, app.versionCode),
+                        isChanged = prev != null && (prev.versionCode != app.versionCode || prev.versionName != app.versionName)
+                    )
+                    AppDetailRow(
+                        label = stringResource(R.string.app_info_install_time),
+                        value = sdf.format(Date(app.firstInstallTime)),
+                        isChanged = prev != null && prev.firstInstallTime != app.firstInstallTime
+                    )
+                    AppDetailRow(
+                        label = stringResource(R.string.app_info_update_time),
+                        value = sdf.format(Date(app.lastUpdateTime)),
+                        isChanged = prev != null && prev.lastUpdateTime != app.lastUpdateTime
+                    )
+                    AppDetailRow(
+                        label = stringResource(R.string.app_info_installer),
+                        value = app.installerPackageName.ifEmpty { "无" },
+                        isChanged = prev != null && prev.installerPackageName != app.installerPackageName
+                    )
+                    AppDetailRow(
+                        label = stringResource(R.string.app_info_signature),
+                        value = app.signatureSha256.ifEmpty { "无" },
+                        isChanged = prev != null && prev.signatureSha256 != app.signatureSha256
+                    )
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    if (isDetailEditable) {
+                        OutlinedTextField(
+                            value = editingNoteText,
+                            onValueChange = { editingNoteText = it },
+                            label = { Text(stringResource(R.string.app_info_note)) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    } else {
+                        AppDetailRow(
+                            label = stringResource(R.string.app_info_note),
+                            value = app.note.ifEmpty { "无" },
+                            isChanged = prev != null && prev.note != app.note
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.updateNote(pkg, editingNoteText)
-                        editingPackage = null
+                if (isDetailEditable) {
+                    TextButton(
+                        onClick = {
+                            viewModel.updateNote(app.packageName, editingNoteText)
+                            editingApp = null
+                        }
+                    ) {
+                        Text(stringResource(R.string.save))
                     }
-                ) {
-                    Text(stringResource(R.string.save))
+                } else {
+                    TextButton(onClick = { editingApp = null }) {
+                        Text(stringResource(R.string.save).let { "OK" }) // Or just OK
+                    }
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = { editingPackage = null }
-                ) {
-                    Text(stringResource(R.string.cancel))
+                if (isDetailEditable) {
+                    TextButton(
+                        onClick = { editingApp = null }
+                    ) {
+                        Text(stringResource(R.string.cancel))
+                    }
                 }
             }
         )

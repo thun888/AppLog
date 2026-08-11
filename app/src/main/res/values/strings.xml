@@ -47,7 +47,14 @@
     <string name="pull">Pull</string>
     <string name="force_push">Force Push</string>
     <string name="force_pull">Force Pull</string>
-    <string name="edit_note">Edit Note</string>
+    <string name="edit_note">App Details</string>
+    <string name="app_info_package">Package:</string>
+    <string name="app_info_version">Version:</string>
+    <string name="app_info_install_time">Install Time:</string>
+    <string name="app_info_update_time">Update Time:</string>
+    <string name="app_info_installer">Installer:</string>
+    <string name="app_info_signature">Signature (SHA256):</string>
+    <string name="app_info_note">Note:</string>
     <string name="commit_dialog_title">Commit Changes</string>
     <string name="commit_message_placeholder">Enter commit message (optional)</string>
     <string name="note_for">Note for %s</string>

@@ -47,7 +47,14 @@
     <string name="pull">拉取</string>
     <string name="force_push">强制推送</string>
     <string name="force_pull">强制拉取</string>
-    <string name="edit_note">编辑备注</string>
+    <string name="edit_note">应用详情</string>
+    <string name="app_info_package">包名:</string>
+    <string name="app_info_version">版本:</string>
+    <string name="app_info_install_time">安装时间:</string>
+    <string name="app_info_update_time">更新时间:</string>
+    <string name="app_info_installer">安装来源:</string>
+    <string name="app_info_signature">签名 (SHA256):</string>
+    <string name="app_info_note">备注:</string>
     <string name="commit_dialog_title">提交更改</string>
     <string name="commit_message_placeholder">输入提交信息 (可选)</string>
     <string name="note_for">%s 的备注</string>

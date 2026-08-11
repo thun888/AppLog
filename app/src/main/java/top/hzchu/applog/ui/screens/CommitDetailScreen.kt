@@ -50,6 +50,7 @@ fun CommitDetailScreen(
     viewModel: MainViewModel,
     @Suppress("UNUSED_PARAMETER") commitId: String,
     onBack: () -> Unit,
+    onAppClick: (top.hzchu.applog.model.AppInfo, top.hzchu.applog.model.AppInfo?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val diff by viewModel.detailDiffResult.collectAsState()
@@ -94,7 +95,12 @@ fun CommitDetailScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
-                DetailContentView(diff = diff!!, allApps = apps, viewModel = viewModel)
+                DetailContentView(
+                    diff = diff!!, 
+                    allApps = apps, 
+                    viewModel = viewModel,
+                    onAppClick = onAppClick
+                )
             }
         }
     }
@@ -104,7 +110,8 @@ fun CommitDetailScreen(
 private fun DetailContentView(
     diff: top.hzchu.applog.model.DiffResult,
     allApps: List<top.hzchu.applog.model.AppInfo>,
-    viewModel: MainViewModel
+    viewModel: MainViewModel,
+    onAppClick: (top.hzchu.applog.model.AppInfo, top.hzchu.applog.model.AppInfo?) -> Unit
 ) {
     val addedPackages = diff.added.map { it.packageName }.toSet()
     val updatedPackages = diff.updated.map { it.second.packageName }.toSet()
@@ -137,7 +144,9 @@ private fun DetailContentView(
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(diff.added) { app -> DiffItemAdded(app) }
+            items(diff.added) { app -> 
+                DiffItemAdded(app = app, onClick = { onAppClick(app, null) }) 
+            }
         }
 
         // 2. Updated
@@ -152,7 +161,7 @@ private fun DetailContentView(
                 )
             }
             items(diff.updated) { (old, new) ->
-                DiffItemUpdated(old = old, new = new)
+                DiffItemUpdated(old = old, new = new, onClick = { onAppClick(new, old) })
             }
         }
 
@@ -167,7 +176,9 @@ private fun DetailContentView(
                     fontWeight = FontWeight.Bold
                 )
             }
-            items(diff.removed) { app -> DiffItemRemoved(app) }
+            items(diff.removed) { app -> 
+                DiffItemRemoved(app = app, onClick = { onAppClick(app, null) }) 
+            }
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(12.dp),
@@ -201,7 +212,11 @@ private fun DetailContentView(
                 )
             }
             items(diff.noteChanged) { (old, new) ->
-                top.hzchu.applog.ui.components.DiffItemNoteChanged(old = old, new = new)
+                top.hzchu.applog.ui.components.DiffItemNoteChanged(
+                    old = old, 
+                    new = new, 
+                    onClick = { onAppClick(new, old) }
+                )
             }
         }
 
@@ -217,8 +232,9 @@ private fun DetailContentView(
                 )
             }
             items(unchangedApps) { app ->
-                top.hzchu.applog.ui.components.AppItem(app = app, onClick = {})
+                top.hzchu.applog.ui.components.AppItem(app = app, onClick = { onAppClick(app, null) })
             }
         }
     }
 }
+

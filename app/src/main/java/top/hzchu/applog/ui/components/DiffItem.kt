@@ -1,5 +1,6 @@
 package top.hzchu.applog.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,10 +30,15 @@ val DiffRemovedColor = Color(0xFFC62828)
 val DiffUpdatedColor = Color(0xFF1565C0)
 
 @Composable
-fun DiffItemAdded(app: AppInfo, modifier: Modifier = Modifier) {
+fun DiffItemAdded(
+    app: AppInfo,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -72,10 +78,15 @@ fun DiffItemAdded(app: AppInfo, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DiffItemRemoved(app: AppInfo, modifier: Modifier = Modifier) {
+fun DiffItemRemoved(
+    app: AppInfo,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -115,10 +126,16 @@ fun DiffItemRemoved(app: AppInfo, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DiffItemUpdated(old: AppInfo, new: AppInfo, modifier: Modifier = Modifier) {
+fun DiffItemUpdated(
+    old: AppInfo,
+    new: AppInfo,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -180,10 +197,16 @@ fun DiffItemUpdated(old: AppInfo, new: AppInfo, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DiffItemNoteChanged(old: AppInfo, new: AppInfo, modifier: Modifier = Modifier) {
+fun DiffItemNoteChanged(
+    old: AppInfo,
+    new: AppInfo,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

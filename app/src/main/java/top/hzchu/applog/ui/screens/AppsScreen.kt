@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import top.hzchu.applog.R
+import top.hzchu.applog.model.AppInfo
 import top.hzchu.applog.ui.components.AppItem
 import top.hzchu.applog.viewmodel.MainViewModel
 
@@ -46,7 +47,7 @@ import top.hzchu.applog.viewmodel.MainViewModel
 @Composable
 fun AppsScreen(
     viewModel: MainViewModel,
-    onAppClick: (String) -> Unit,
+    onAppClick: (AppInfo, AppInfo?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val apps by viewModel.filteredApps.collectAsState()
@@ -151,7 +152,7 @@ fun AppsScreen(
                     items(apps, key = { it.packageName }) { app ->
                         AppItem(
                             app = app,
-                            onClick = { onAppClick(app.packageName) }
+                            onClick = { onAppClick(app, null) }
                         )
                     }
                 }
