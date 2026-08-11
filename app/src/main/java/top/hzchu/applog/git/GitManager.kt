@@ -29,6 +29,10 @@ class GitManager(private val context: Context) {
         const val SNAPSHOT_FILE = "apps_snapshot.txt"
         const val REPO_DIR = "git_repo"
         const val DEFAULT_BRANCH = "main"
+        const val REMOTE_NAME = "origin"
+        
+        private const val AUTHOR_NAME = "AppLog"
+        private const val AUTHOR_EMAIL = "applog@local"
     }
 
     private val repoDir: File
@@ -80,7 +84,7 @@ class GitManager(private val context: Context) {
                     return@use Result.success("")
                 }
                 
-                val person = PersonIdent("AppLog", "applog@local")
+                val person = PersonIdent(AUTHOR_NAME, AUTHOR_EMAIL)
                 val commit = g.commit()
                     .setMessage(message)
                     .setAuthor(person)
@@ -198,6 +202,22 @@ class GitManager(private val context: Context) {
         }
     }
 
+    private suspend fun setupRemote(git: Git, remoteUrl: String): String {
+        val remoteList = git.remoteList().call()
+        if (remoteList.any { it.name == REMOTE_NAME }) {
+            git.remoteSetUrl()
+                .setRemoteName(REMOTE_NAME)
+                .setRemoteUri(org.eclipse.jgit.transport.URIish(remoteUrl))
+                .call()
+        } else {
+            git.remoteAdd()
+                .setName(REMOTE_NAME)
+                .setUri(org.eclipse.jgit.transport.URIish(remoteUrl))
+                .call()
+        }
+        return REMOTE_NAME
+    }
+
     suspend fun pushToRemote(
         remoteUrl: String,
         username: String,
@@ -206,31 +226,18 @@ class GitManager(private val context: Context) {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             git?.use { g ->
-                val remoteName = "origin"
-                val remoteList = g.remoteList().call()
-                if (remoteList.any { it.name == remoteName }) {
-                    g.remoteSetUrl()
-                        .setRemoteName(remoteName)
-                        .setRemoteUri(org.eclipse.jgit.transport.URIish(remoteUrl))
-                        .call()
-                } else {
-                    g.remoteAdd()
-                        .setName(remoteName)
-                        .setUri(org.eclipse.jgit.transport.URIish(remoteUrl))
-                        .call()
-                }
+                val remoteName = setupRemote(g, remoteUrl)
+                val currentBranch = g.repository.branch ?: DEFAULT_BRANCH
 
                 val pushCommand = g.push()
                     .setRemote(remoteName)
                     .setCredentialsProvider(UsernamePasswordCredentialsProvider(username, password))
 
-                val spec = if (force) {
-                    "+refs/heads/${DEFAULT_BRANCH}:refs/heads/${DEFAULT_BRANCH}"
-                } else {
-                    "refs/heads/${DEFAULT_BRANCH}:refs/heads/${DEFAULT_BRANCH}"
-                }
-                pushCommand.setRefSpecs(RefSpec(spec))
-                pushCommand.call()
+                val specStr = if (force) "+refs/heads/$currentBranch" else "refs/heads/$currentBranch"
+                pushCommand.setRefSpecs(RefSpec("$specStr:refs/heads/$currentBranch"))
+                
+                val results = pushCommand.call()
+                // Check for failures in push results if needed
                 Result.success(Unit)
             } ?: Result.failure(Exception("Repo not initialized"))
         } catch (e: Exception) {
@@ -246,19 +253,8 @@ class GitManager(private val context: Context) {
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             git?.use { g ->
-                val remoteName = "origin"
-                val remoteList = g.remoteList().call()
-                if (remoteList.any { it.name == remoteName }) {
-                    g.remoteSetUrl()
-                        .setRemoteName(remoteName)
-                        .setRemoteUri(org.eclipse.jgit.transport.URIish(remoteUrl))
-                        .call()
-                } else {
-                    g.remoteAdd()
-                        .setName(remoteName)
-                        .setUri(org.eclipse.jgit.transport.URIish(remoteUrl))
-                        .call()
-                }
+                val remoteName = setupRemote(g, remoteUrl)
+                val currentBranch = g.repository.branch ?: DEFAULT_BRANCH
 
                 if (force) {
                     g.fetch()
@@ -267,7 +263,7 @@ class GitManager(private val context: Context) {
                         .call()
                     g.reset()
                         .setMode(ResetCommand.ResetType.HARD)
-                        .setRef("origin/${DEFAULT_BRANCH}")
+                        .setRef("$remoteName/$currentBranch")
                         .call()
                 } else {
                     g.pull()

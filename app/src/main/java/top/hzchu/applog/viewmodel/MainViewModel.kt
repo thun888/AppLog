@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +25,20 @@ import top.hzchu.applog.scanner.AppScanner
 import top.hzchu.applog.serializer.AppListSerializer
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    companion object {
+        private const val PREFS_NOTES = "applog_notes"
+        private const val PREFS_REMOTE = "applog_remote_secure"
+        private const val PREFS_DEBOUNCE = "applog_debounce"
+        private const val PREFS_SETTINGS = "applog_settings"
+
+        private const val KEY_NOTES_JSON = "notes_json"
+        private const val KEY_REMOTE_URL = "remote_url"
+        private const val KEY_REMOTE_USER = "remote_username"
+        private const val KEY_REMOTE_PASS = "remote_password"
+        private const val KEY_DEBOUNCE_THRESHOLD = "debounce_threshold"
+        private const val KEY_AUTO_SCAN = "auto_scan_on_start"
+    }
 
     private val appScanner = AppScanner(application)
     val gitManager = GitManager(application)
@@ -86,7 +102,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // --- Notes ---
 
     private val notesPrefs =
-        application.getSharedPreferences("applog_notes", Context.MODE_PRIVATE)
+        application.getSharedPreferences(PREFS_NOTES, Context.MODE_PRIVATE)
+
+    private val remotePrefs by lazy {
+        val masterKey = MasterKey.Builder(application)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        EncryptedSharedPreferences.create(
+            application,
+            PREFS_REMOTE,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
 
     private val _notesMap = MutableStateFlow<Map<String, String>>(emptyMap())
     val notesMap: StateFlow<Map<String, String>> = _notesMap.asStateFlow()
@@ -403,7 +432,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun loadNotes() {
-        val json = notesPrefs.getString("notes_json", "{}") ?: "{}"
+        val json = notesPrefs.getString(KEY_NOTES_JSON, "{}") ?: "{}"
         try {
             val map = mutableMapOf<String, String>()
             val trimmed = json.trim().removeSurrounding("{", "}")
@@ -432,7 +461,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
             append("}")
         }
-        notesPrefs.edit().putString("notes_json", json).apply()
+        notesPrefs.edit().putString(KEY_NOTES_JSON, json).apply()
     }
 
     // --- Push / Pull ---
@@ -474,47 +503,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getDebounceThreshold(): Int {
         return getApplication<android.app.Application>()
-            .getSharedPreferences("applog_debounce", Context.MODE_PRIVATE)
-            .getInt("debounce_threshold", 5)
+            .getSharedPreferences(PREFS_DEBOUNCE, Context.MODE_PRIVATE)
+            .getInt(KEY_DEBOUNCE_THRESHOLD, 5)
     }
 
     fun setDebounceThreshold(threshold: Int) {
         getApplication<android.app.Application>()
-            .getSharedPreferences("applog_debounce", Context.MODE_PRIVATE)
-            .edit().putInt("debounce_threshold", threshold).apply()
+            .getSharedPreferences(PREFS_DEBOUNCE, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_DEBOUNCE_THRESHOLD, threshold).apply()
     }
 
     fun getAutoScanOnStart(): Boolean {
         return getApplication<android.app.Application>()
-            .getSharedPreferences("applog_settings", Context.MODE_PRIVATE)
-            .getBoolean("auto_scan_on_start", false)
+            .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_AUTO_SCAN, false)
     }
 
     fun setAutoScanOnStart(enabled: Boolean) {
         getApplication<android.app.Application>()
-            .getSharedPreferences("applog_settings", Context.MODE_PRIVATE)
-            .edit().putBoolean("auto_scan_on_start", enabled).apply()
+            .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_AUTO_SCAN, enabled).apply()
     }
 
     // --- Remote Config ---
 
     fun saveRemoteConfig(url: String, username: String, password: String) {
-        val prefs = getApplication<android.app.Application>()
-            .getSharedPreferences("applog_remote", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("remote_url", url)
-            .putString("remote_username", username)
-            .putString("remote_password", password)
+        remotePrefs.edit()
+            .putString(KEY_REMOTE_URL, url)
+            .putString(KEY_REMOTE_USER, username)
+            .putString(KEY_REMOTE_PASS, password)
             .apply()
     }
 
     fun getRemoteConfig(): Triple<String, String, String> {
-        val prefs = getApplication<android.app.Application>()
-            .getSharedPreferences("applog_remote", Context.MODE_PRIVATE)
         return Triple(
-            prefs.getString("remote_url", "") ?: "",
-            prefs.getString("remote_username", "") ?: "",
-            prefs.getString("remote_password", "") ?: ""
+            remotePrefs.getString(KEY_REMOTE_URL, "") ?: "",
+            remotePrefs.getString(KEY_REMOTE_USER, "") ?: "",
+            remotePrefs.getString(KEY_REMOTE_PASS, "") ?: ""
         )
     }
 
