@@ -73,6 +73,7 @@
 
     <string name="scan_failed">扫描失败: %s</string>
     <string name="committed">已提交: %s</string>
+    <string name="load_more">加载更多</string>
     <string name="no_changes">无更改</string>
     <string name="commit_failed">提交失败: %s</string>
     <string name="error_prefix">错误: %s</string>

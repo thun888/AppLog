@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
@@ -25,16 +26,19 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import top.hzchu.applog.R
 import top.hzchu.applog.git.CommitInfo
 import top.hzchu.applog.ui.components.CommitItem
@@ -49,12 +53,27 @@ fun HistoryScreen(
 ) {
     val commits by viewModel.commits.collectAsState()
     val isLoading by viewModel.isLoadingHistory.collectAsState()
+    val canLoadMore by viewModel.canLoadMoreHistory.collectAsState()
     val currentBranch by viewModel.currentBranch.collectAsState()
 
     var showTagDialog by remember { mutableStateOf(false) }
     var taggingCommitId by remember { mutableStateOf("") }
     var tagName by remember { mutableStateOf("") }
     var tagMessage by remember { mutableStateOf("") }
+
+    val listState = rememberLazyListState()
+
+    // Auto-load more when scrolling near the bottom
+    LaunchedEffect(listState, commits.size, canLoadMore, isLoading) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+            .filter { it != null && it >= commits.size - 2 }
+            .distinctUntilChanged()
+            .collect {
+                if (canLoadMore && !isLoading) {
+                    viewModel.loadMoreHistory()
+                }
+            }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -83,53 +102,75 @@ fun HistoryScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item {
+                    CommitItem(
+                        commit = CommitInfo(
+                            id = "CURRENT",
+                            shortId = "CURRENT",
+                            message = stringResource(R.string.current_status),
+                            author = "",
+                            timestamp = System.currentTimeMillis()
+                        ),
+                        isSelected = false,
+                        onClick = { onCommitClick("CURRENT") }
+                    )
+                }
+
+                if (commits.isEmpty() && !isLoading) {
                     item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = stringResource(R.string.no_commits),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    items(commits, key = { it.id }) { commit ->
                         CommitItem(
-                            commit = CommitInfo(
-                                id = "CURRENT",
-                                shortId = "CURRENT",
-                                message = stringResource(R.string.current_status),
-                                author = "",
-                                timestamp = System.currentTimeMillis()
-                            ),
+                            commit = commit,
                             isSelected = false,
-                            onClick = { onCommitClick("CURRENT") }
+                            onClick = { onCommitClick(commit.id) },
+                            onLongClick = {
+                                taggingCommitId = commit.id
+                                tagName = ""
+                                tagMessage = ""
+                                showTagDialog = true
+                            }
                         )
                     }
 
-                    if (commits.isEmpty()) {
+                    if (isLoading) {
                         item {
-                            Column(
-                                modifier = Modifier.fillMaxWidth().padding(top = 32.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = stringResource(R.string.no_commits),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                CircularProgressIndicator()
                             }
                         }
-                    } else {
-                        items(commits, key = { it.id }) { commit ->
-                            CommitItem(
-                                commit = commit,
-                                isSelected = false,
-                                onClick = { onCommitClick(commit.id) },
-                                onLongClick = {
-                                    taggingCommitId = commit.id
-                                    tagName = ""
-                                    tagMessage = ""
-                                    showTagDialog = true
-                                }
-                            )
+                    } else if (canLoadMore) {
+                        item {
+                            TextButton(
+                                onClick = { viewModel.loadMoreHistory() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                            ) {
+                                Text(stringResource(R.string.load_more))
+                            }
                         }
                     }
                 }

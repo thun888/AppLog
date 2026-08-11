@@ -72,6 +72,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isLoadingHistory = MutableStateFlow(false)
     val isLoadingHistory: StateFlow<Boolean> = _isLoadingHistory.asStateFlow()
 
+    private val _canLoadMoreHistory = MutableStateFlow(true)
+    val canLoadMoreHistory: StateFlow<Boolean> = _canLoadMoreHistory.asStateFlow()
+
+    private var historyPageSize = 20
+    private var historyCurrentOffset = 0
+
     private val _branches = MutableStateFlow<List<String>>(emptyList())
     val branches: StateFlow<List<String>> = _branches.asStateFlow()
 
@@ -247,16 +253,32 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadHistory() {
         viewModelScope.launch {
-            loadHistoryInternal()
+            historyCurrentOffset = 0
+            _canLoadMoreHistory.value = true
+            loadHistoryInternal(append = false)
         }
     }
 
-    private suspend fun loadHistoryInternal() {
+    fun loadMoreHistory() {
+        if (_isLoadingHistory.value || !_canLoadMoreHistory.value) return
+        viewModelScope.launch {
+            loadHistoryInternal(append = true)
+        }
+    }
+
+    private suspend fun loadHistoryInternal(append: Boolean) {
         _isLoadingHistory.value = true
-        gitManager.getCommitHistory().onSuccess {
-            _commits.value = it
+        gitManager.getCommitHistory(skip = historyCurrentOffset, maxCount = historyPageSize).onSuccess {
+            if (append) {
+                _commits.value = _commits.value + it
+            } else {
+                _commits.value = it
+            }
+            historyCurrentOffset += it.size
+            _canLoadMoreHistory.value = it.size >= historyPageSize
         }.onFailure {
-            _commits.value = emptyList()
+            if (!append) _commits.value = emptyList()
+            _canLoadMoreHistory.value = false
         }
         _currentBranch.value = gitManager.getCurrentBranch()
         _isLoadingHistory.value = false
@@ -276,7 +298,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             gitManager.checkoutBranch(branchName).onSuccess {
                 _currentBranch.value = branchName
                 loadBranches() // Refresh list to update selection markers
-                loadHistoryInternal()
+                historyCurrentOffset = 0
+                _canLoadMoreHistory.value = true
+                loadHistoryInternal(append = false)
             }.onFailure {
                 _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, it.message)
                 _isLoadingHistory.value = false
@@ -290,7 +314,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 loadBranches()
                 if (isOrphan) {
                     // Orphan branch automatically checkouts, so refresh history
-                    loadHistoryInternal()
+                    historyCurrentOffset = 0
+                    _canLoadMoreHistory.value = true
+                    loadHistoryInternal(append = false)
                 }
                 _toastMessage.value = getApplication<Application>().getString(R.string.branch_created, branchName)
             }.onFailure {

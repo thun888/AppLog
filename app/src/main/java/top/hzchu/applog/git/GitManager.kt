@@ -97,11 +97,11 @@ class GitManager(private val context: Context) {
         }
     }
 
-    suspend fun getCommitHistory(maxCount: Int = 100): Result<List<CommitInfo>> = withContext(Dispatchers.IO) {
+    suspend fun getCommitHistory(skip: Int = 0, maxCount: Int = 20): Result<List<CommitInfo>> = withContext(Dispatchers.IO) {
         try {
             git?.use { g ->
                 val commits = mutableListOf<CommitInfo>()
-                val logIter = g.log().setMaxCount(maxCount).call()
+                val logIter = g.log().setSkip(skip).setMaxCount(maxCount).call()
                 val tagMap = getTagMap(g)
 
                 for (revCommit in logIter) {
