@@ -54,7 +54,7 @@
     <string name="app_info_update_time">更新时间:</string>
     <string name="app_info_installer">安装来源:</string>
     <string name="app_info_signature">签名 (SHA256):</string>
-    <string name="app_info_note">备注:</string>
+    <string name="app_info_note">备注</string>
     <string name="commit_dialog_title">提交更改</string>
     <string name="commit_message_placeholder">输入提交信息 (可选)</string>
     <string name="note_for">%s 的备注</string>
@@ -109,9 +109,9 @@
     <string name="diff_summary_notes">修改 %d 条备注</string>
     <string name="diff_summary_tags">修改 %d 个标签</string>
     <string name="diff_tags">标签变更 (%d)</string>
-    <string name="app_info_tags">标签:</string>
+    <string name="app_info_tags">标签</string>
     <string name="tags_added">新增标签: %s</string>
     <string name="tags_removed_diff">移除标签: %s</string>
-    <string name="tags_placeholder">标签1, 标签2</string>
+    <string name="tags_placeholder">回车添加标签</string>
     <string name="remove_tag">移除 %s</string>
 </resources>
