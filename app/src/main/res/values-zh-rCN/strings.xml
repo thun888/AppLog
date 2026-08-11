@@ -103,4 +103,8 @@
     <string name="share_apk">分享安装包</string>
     <string name="extract_success">安装包已提取到下载目录</string>
     <string name="extract_failed">提取失败: %s</string>
+    <string name="diff_summary_added">新增 %d 个应用</string>
+    <string name="diff_summary_removed">移除 %d 个应用</string>
+    <string name="diff_summary_updated">%d 个应用已更新</string>
+    <string name="diff_summary_notes">修改 %d 条备注</string>
 </resources>

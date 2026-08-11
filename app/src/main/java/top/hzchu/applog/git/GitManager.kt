@@ -290,7 +290,7 @@ class GitManager(private val context: Context) {
         if (removed > 0) parts.add("-$removed apps")
         if (updated > 0) parts.add("$updated updated")
         if (notes > 0) parts.add("$notes notes")
-        val summary = parts.joinToString(", ").ifEmpty { "no changes" }
+        val summary = parts.joinToString(", ")
         return "[AutoCommit] $summary"
     }
 

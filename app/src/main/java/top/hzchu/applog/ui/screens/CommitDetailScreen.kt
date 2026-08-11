@@ -134,13 +134,20 @@ private fun DetailContentView(
     val addedPackages = diff.added.map { it.packageName }.toSet()
     val updatedPackages = diff.updated.map { it.second.packageName }.toSet()
 
+    val summary = buildList {
+        if (diff.added.isNotEmpty()) add(stringResource(R.string.diff_summary_added, diff.added.size))
+        if (diff.removed.isNotEmpty()) add(stringResource(R.string.diff_summary_removed, diff.removed.size))
+        if (diff.updated.isNotEmpty()) add(stringResource(R.string.diff_summary_updated, diff.updated.size))
+        if (diff.noteChanged.isNotEmpty()) add(stringResource(R.string.diff_summary_notes, diff.noteChanged.size))
+    }.joinToString(", ").ifEmpty { stringResource(R.string.no_changes) }
+
     LazyColumn(
         contentPadding = PaddingValues(12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         item {
             Text(
-                text = diff.summary,
+                text = summary,
                 modifier = Modifier.fillMaxWidth().padding(4.dp),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold

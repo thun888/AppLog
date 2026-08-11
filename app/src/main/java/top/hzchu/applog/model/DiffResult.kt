@@ -19,16 +19,6 @@ data class DiffResult(
     val totalChanges: Int
         get() = added.size + removed.size + updated.size + noteChanged.size
 
-    val summary: String
-        get() {
-            val parts = mutableListOf<String>()
-            if (added.isNotEmpty()) parts.add("+${added.size} apps")
-            if (removed.isNotEmpty()) parts.add("-${removed.size} apps")
-            if (updated.isNotEmpty()) parts.add("${updated.size} updated")
-            if (noteChanged.isNotEmpty()) parts.add("${noteChanged.size} notes")
-            return parts.joinToString(", ").ifEmpty { "no changes" }
-        }
-
     enum class ChangeType {
         ADDED,
         REMOVED,
