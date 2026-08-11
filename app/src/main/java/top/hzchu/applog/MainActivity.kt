@@ -285,8 +285,7 @@ fun AppLogApp() {
                 if (isDetailEditable) {
                     TextButton(
                         onClick = {
-                            viewModel.updateNote(app.packageName, editingNoteText)
-                            viewModel.updateTags(app.packageName, editingTagsText)
+                            viewModel.updateAppMetadata(app.packageName, editingNoteText, editingTagsText)
                             editingApp = null
                         }
                     ) {

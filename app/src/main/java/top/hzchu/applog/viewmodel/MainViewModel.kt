@@ -202,9 +202,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val appPrev = mapPrev[appCurr.packageName] ?: continue
             if (isAppVersionChanged(appPrev, appCurr)) {
                 updated.add(appPrev to appCurr)
-            } else if (appPrev.tags != appCurr.tags) {
+            }
+            if (appPrev.tags != appCurr.tags) {
                 tagsChanged.add(appPrev to appCurr)
-            } else if (appPrev.note != appCurr.note) {
+            }
+            if (appPrev.note != appCurr.note) {
                 noteChanged.add(appPrev to appCurr)
             }
         }
@@ -543,7 +545,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 val newNote = notes[app.packageName]
                 if (newNote != null) updated = updated.copy(note = newNote)
                 val newTags = tags[app.packageName]
-                if (newTags != null) updated = updated.copy(tags = normalizeTags(newTags))
+                if (newTags != null) updated = updated.copy(tags = newTags)
                 updated
             }
             file.writeText(AppListSerializer.serialize(updatedApps))
@@ -552,27 +554,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateNote(packageName: String, note: String) {
+    fun updateAppMetadata(packageName: String, note: String, tags: String) {
+        val normalizedTags = normalizeTags(tags)
+
         val currentNotes = _notesMap.value.toMutableMap()
         if (note.isBlank()) currentNotes.remove(packageName)
         else currentNotes[packageName] = note
         _notesMap.value = currentNotes
+
+        val currentTags = _tagsMap.value.toMutableMap()
+        if (normalizedTags.isBlank()) currentTags.remove(packageName)
+        else currentTags[packageName] = normalizedTags
+        _tagsMap.value = currentTags
+
         syncMetadataToWorkingFile()
+
         _apps.value = _apps.value.map { app ->
-            if (app.packageName == packageName) app.copy(note = note) else app
+            if (app.packageName == packageName) app.copy(note = note, tags = normalizedTags) else app
         }
     }
 
+    fun updateNote(packageName: String, note: String) {
+        val existingTags = _tagsMap.value[packageName] ?: ""
+        updateAppMetadata(packageName, note, existingTags)
+    }
+
     fun updateTags(packageName: String, tags: String) {
-        val normalized = normalizeTags(tags)
-        val currentTags = _tagsMap.value.toMutableMap()
-        if (normalized.isBlank()) currentTags.remove(packageName)
-        else currentTags[packageName] = normalized
-        _tagsMap.value = currentTags
-        syncMetadataToWorkingFile()
-        _apps.value = _apps.value.map { app ->
-            if (app.packageName == packageName) app.copy(tags = normalized) else app
-        }
+        val existingNote = _notesMap.value[packageName] ?: ""
+        updateAppMetadata(packageName, existingNote, tags)
     }
 
     // --- Push / Pull ---
