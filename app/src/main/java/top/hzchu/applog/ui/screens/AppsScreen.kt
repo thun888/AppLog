@@ -41,6 +41,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -205,6 +208,23 @@ fun AppsScreen(
                                 expanded = menuApp == app,
                                 onDismissRequest = { menuApp = null }
                             ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.edit_note)) },
+                                    onClick = {
+                                        menuApp = null
+                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
+                                        context.startActivity(intent)
+                                    }
+                                )
+//                                在部分环境下无效，先注释掉
+//                                DropdownMenuItem(
+//                                    text = { Text(stringResource(R.string.uninstall_app)) },
+//                                    onClick = {
+//                                        menuApp = null
+//                                        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))
+//                                        context.startActivity(intent)
+//                                    }
+//                                )
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.extract_apk)) },
                                     onClick = {

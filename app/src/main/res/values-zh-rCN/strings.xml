@@ -101,6 +101,7 @@
     <string name="pull_error">拉取错误: %s</string>
     <string name="extract_apk">提取安装包</string>
     <string name="share_apk">分享安装包</string>
+    <string name="uninstall_app">卸载</string>
     <string name="extract_success">安装包已提取到下载目录</string>
     <string name="extract_failed">提取失败: %s</string>
     <string name="diff_summary_added">新增 %d 个应用</string>
