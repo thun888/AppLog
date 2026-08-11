@@ -15,6 +15,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -103,6 +105,12 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { viewModel.pushWithSavedConfig() }) {
+                        Icon(Icons.Filled.CloudUpload, contentDescription = stringResource(R.string.push))
+                    }
+                    IconButton(onClick = { viewModel.pullWithSavedConfig() }) {
+                        Icon(Icons.Filled.CloudDownload, contentDescription = stringResource(R.string.pull))
+                    }
                     IconButton(onClick = { viewModel.loadHistory() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
                     }

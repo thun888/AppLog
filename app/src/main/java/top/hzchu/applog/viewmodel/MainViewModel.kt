@@ -563,6 +563,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun pushWithSavedConfig(force: Boolean = false) {
+        val (url, user, pass) = getRemoteConfig()
+        if (url.isBlank()) {
+            showToast(getApplication<Application>().getString(R.string.error_prefix, "Remote URL not set"))
+            return
+        }
+        pushToRemote(url, user, pass, force)
+    }
+
+    fun pullWithSavedConfig(force: Boolean = false) {
+        val (url, user, pass) = getRemoteConfig()
+        if (url.isBlank()) {
+            showToast(getApplication<Application>().getString(R.string.error_prefix, "Remote URL not set"))
+            return
+        }
+        pullFromRemote(url, user, pass, force)
+    }
+
     // --- Debounce ---
 
     fun getDebounceCount(): Int = PackageChangeReceiver.getCounter(getApplication())
