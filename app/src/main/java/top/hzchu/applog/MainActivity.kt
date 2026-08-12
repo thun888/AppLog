@@ -10,6 +10,11 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -125,6 +130,9 @@ fun AppDetailRow(
 fun AppLogApp() {
     val viewModel: MainViewModel = viewModel()
     val isFirstLaunch by viewModel.isFirstLaunch.collectAsState()
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     if (isFirstLaunch) {
         Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -136,10 +144,6 @@ fun AppLogApp() {
         return
     }
 
-    var selectedTab by remember { mutableStateOf(NavigationTab.APPS) }
-    var selectedCommitId by remember { mutableStateOf<String?>(null) }
-    var isManagingBranches by remember { mutableStateOf(false) }
-    var isShowingAbout by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val toastMessage by viewModel.toastMessage.collectAsState()
     val showCommitDialog by viewModel.showCommitDialog.collectAsState()
@@ -174,12 +178,21 @@ fun AppLogApp() {
         modifier = Modifier.fillMaxSize(),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            if (selectedCommitId == null && !isManagingBranches) {
+            val showBottomBar = currentRoute in NavigationTab.entries.map { it.name }
+            if (showBottomBar) {
                 NavigationBar {
                     NavigationTab.entries.forEach { tab ->
                         NavigationBarItem(
-                            selected = selectedTab == tab,
-                            onClick = { selectedTab = tab },
+                            selected = currentRoute == tab.name,
+                            onClick = {
+                                if (currentRoute != tab.name) {
+                                    navController.navigate(tab.name) {
+                                        popUpTo(NavigationTab.APPS.name) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
                             icon = { Icon(tab.icon, contentDescription = stringResource(tab.labelRes)) },
                             label = { Text(stringResource(tab.labelRes)) }
                         )
@@ -188,7 +201,7 @@ fun AppLogApp() {
             }
         },
         floatingActionButton = {
-            if (selectedTab == NavigationTab.APPS && selectedCommitId == null && !isManagingBranches && !isShowingAbout) {
+            if (currentRoute == NavigationTab.APPS.name) {
                 FloatingActionButton(
                     onClick = { viewModel.prepareCommit() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -198,35 +211,13 @@ fun AppLogApp() {
             }
         }
     ) { innerPadding ->
-        if (selectedCommitId != null) {
-            CommitDetailScreen(
-                viewModel = viewModel,
-                commitId = selectedCommitId!!,
-                onBack = { selectedCommitId = null },
-                onAppClick = { app, prev ->
-                    editingApp = app
-                    previousAppForDiff = prev
-                    isDetailEditable = false
-                    editingNoteText = app.note
-                    editingTagsList = app.tags.split(", ").filter { it.isNotEmpty() }
-                },
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else if (isManagingBranches) {
-            BranchScreen(
-                viewModel = viewModel,
-                onBack = { isManagingBranches = false },
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else if (isShowingAbout) {
-            top.hzchu.applog.ui.screens.AboutScreen(
-                viewModel = viewModel,
-                onBack = { isShowingAbout = false },
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else {
-            when (selectedTab) {
-                NavigationTab.APPS -> AppsScreen(
+        NavHost(
+            navController = navController,
+            startDestination = NavigationTab.APPS.name,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(NavigationTab.APPS.name) {
+                AppsScreen(
                     viewModel = viewModel,
                     onAppClick = { app, prev ->
                         editingApp = app
@@ -234,22 +225,50 @@ fun AppLogApp() {
                         isDetailEditable = true
                         editingNoteText = app.note
                         editingTagsList = app.tags.split(", ").filter { it.isNotEmpty() }
-                    },
-                    modifier = Modifier.padding(innerPadding)
+                    }
                 )
-                NavigationTab.HISTORY -> HistoryScreen(
+            }
+            composable(NavigationTab.HISTORY.name) {
+                HistoryScreen(
                     viewModel = viewModel,
                     onCommitClick = { id ->
                         viewModel.loadCommitDetail(id)
-                        selectedCommitId = id
-                    },
-                    modifier = Modifier.padding(innerPadding)
+                        navController.navigate("commit_detail/$id")
+                    }
                 )
-                NavigationTab.SETTINGS -> SettingsScreen(
+            }
+            composable(NavigationTab.SETTINGS.name) {
+                SettingsScreen(
                     viewModel = viewModel,
-                    onNavigateToBranches = { isManagingBranches = true },
-                    onNavigateToAbout = { isShowingAbout = true },
-                    modifier = Modifier.padding(innerPadding)
+                    onNavigateToBranches = { navController.navigate("branches") },
+                    onNavigateToAbout = { navController.navigate("about") }
+                )
+            }
+            composable("commit_detail/{commitId}") { backStackEntry ->
+                val commitId = backStackEntry.arguments?.getString("commitId") ?: ""
+                CommitDetailScreen(
+                    viewModel = viewModel,
+                    commitId = commitId,
+                    onBack = { navController.popBackStack() },
+                    onAppClick = { app, prev ->
+                        editingApp = app
+                        previousAppForDiff = prev
+                        isDetailEditable = false
+                        editingNoteText = app.note
+                        editingTagsList = app.tags.split(", ").filter { it.isNotEmpty() }
+                    }
+                )
+            }
+            composable("branches") {
+                BranchScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("about") {
+                top.hzchu.applog.ui.screens.AboutScreen(
+                    viewModel = viewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
