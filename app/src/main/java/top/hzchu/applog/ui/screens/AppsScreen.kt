@@ -1,5 +1,9 @@
 package top.hzchu.applog.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,8 +18,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -39,9 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -49,9 +56,11 @@ import top.hzchu.applog.R
 import top.hzchu.applog.model.AppInfo
 import top.hzchu.applog.ui.components.AppItem
 import top.hzchu.applog.utils.ApkHelper
+import top.hzchu.applog.viewmodel.AppGrouping
+import top.hzchu.applog.viewmodel.AppSortOrder
 import top.hzchu.applog.viewmodel.MainViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun AppsScreen(
     viewModel: MainViewModel,
@@ -60,12 +69,19 @@ fun AppsScreen(
 ) {
     val context = LocalContext.current
     val apps by viewModel.filteredApps.collectAsState()
+    val groupedApps by viewModel.groupedApps.collectAsState()
     val isScanning by viewModel.isScanning.collectAsState()
     val showSystem by viewModel.showSystemApps.collectAsState()
     val showUser by viewModel.showUserApps.collectAsState()
     val extractProgress by viewModel.extractingProgress.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val currentSort by viewModel.sortOrder.collectAsState()
+    val currentGrouping by viewModel.grouping.collectAsState()
 
     var showFilterMenu by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
+    var showGroupMenu by remember { mutableStateOf(false) }
+    var isSearchActive by remember { mutableStateOf(false) }
     var menuApp by remember { mutableStateOf<AppInfo?>(null) }
 
     if (extractProgress != null) {
@@ -106,40 +122,114 @@ fun AppsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.tab_apps)) },
-                actions = {
-                    Box {
-                        IconButton(onClick = { showFilterMenu = true }) {
-                            Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.filter))
-                        }
-                        DropdownMenu(
-                            expanded = showFilterMenu,
-                            onDismissRequest = { showFilterMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = showSystem, onCheckedChange = null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(stringResource(R.string.show_system_apps))
-                                    }
-                                },
-                                onClick = { viewModel.toggleSystemApps(!showSystem) }
-                            )
-                            DropdownMenuItem(
-                                text = {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Checkbox(checked = showUser, onCheckedChange = null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text(stringResource(R.string.show_user_apps))
-                                    }
-                                },
-                                onClick = { viewModel.toggleUserApps(!showUser) }
-                            )
-                        }
+                title = {
+                    if (isSearchActive) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { viewModel.setSearchQuery(it) },
+                            placeholder = { Text(stringResource(R.string.search_hint)) },
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            singleLine = true,
+                            trailingIcon = {
+                                IconButton(onClick = { 
+                                    viewModel.setSearchQuery("")
+                                    isSearchActive = false 
+                                }) {
+                                    Icon(Icons.Filled.Close, contentDescription = null)
+                                }
+                            }
+                        )
+                    } else {
+                        Text(stringResource(R.string.tab_apps))
                     }
-                    IconButton(onClick = { viewModel.scanApps() }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
+                },
+                actions = {
+                    if (!isSearchActive) {
+                        IconButton(onClick = { isSearchActive = true }) {
+                            Icon(Icons.Filled.Search, contentDescription = null)
+                        }
+                        
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort_by))
+                            }
+                            DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                                AppSortOrder.entries.forEach { order ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(when(order) {
+                                            AppSortOrder.NAME -> R.string.sort_name
+                                            AppSortOrder.PACKAGE_NAME -> R.string.sort_package
+                                            AppSortOrder.INSTALL_TIME -> R.string.sort_install_time
+                                            AppSortOrder.UPDATE_TIME -> R.string.sort_update_time
+                                        })) },
+                                        onClick = {
+                                            viewModel.setSortOrder(order)
+                                            showSortMenu = false
+                                        },
+                                        trailingIcon = if (currentSort == order) {
+                                            { Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                                        } else null
+                                    )
+                                }
+                            }
+                        }
+
+                        Box {
+                            IconButton(onClick = { showGroupMenu = true }) {
+                                Icon(Icons.Filled.GridView, contentDescription = stringResource(R.string.group_by))
+                            }
+                            DropdownMenu(expanded = showGroupMenu, onDismissRequest = { showGroupMenu = false }) {
+                                AppGrouping.entries.forEach { grouping ->
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(when(grouping) {
+                                            AppGrouping.NONE -> R.string.group_none
+                                            AppGrouping.TAGS -> R.string.group_tags
+                                        })) },
+                                        onClick = {
+                                            viewModel.setGrouping(grouping)
+                                            showGroupMenu = false
+                                        },
+                                        trailingIcon = if (currentGrouping == grouping) {
+                                            { Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) }
+                                        } else null
+                                    )
+                                }
+                            }
+                        }
+
+                        Box {
+                            IconButton(onClick = { showFilterMenu = true }) {
+                                Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.filter))
+                            }
+                            DropdownMenu(
+                                expanded = showFilterMenu,
+                                onDismissRequest = { showFilterMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Checkbox(checked = showSystem, onCheckedChange = null)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(stringResource(R.string.show_system_apps))
+                                        }
+                                    },
+                                    onClick = { viewModel.toggleSystemApps(!showSystem) }
+                                )
+                                DropdownMenuItem(
+                                    text = {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Checkbox(checked = showUser, onCheckedChange = null)
+                                            Spacer(Modifier.width(8.dp))
+                                            Text(stringResource(R.string.show_user_apps))
+                                        }
+                                    },
+                                    onClick = { viewModel.toggleUserApps(!showUser) }
+                                )
+                            }
+                        }
+                        IconButton(onClick = { viewModel.scanApps() }) {
+                            Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
+                        }
                     }
                 }
             )
@@ -186,49 +276,59 @@ fun AppsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    items(apps, key = { it.packageName }) { app ->
-                        Box {
-                            AppItem(
-                                app = app,
-                                onClick = { onAppClick(app, null) },
-                                onLongClick = { menuApp = app }
-                            )
-                            
-                            DropdownMenu(
-                                expanded = menuApp == app,
-                                onDismissRequest = { menuApp = null }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.edit_note)) },
-                                    onClick = {
-                                        menuApp = null
-                                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
-                                        context.startActivity(intent)
-                                    }
+
+                    groupedApps.forEach { (groupName, groupApps) ->
+                        if (currentGrouping != AppGrouping.NONE) {
+                            stickyHeader {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                    shape = MaterialTheme.shapes.small
+                                ) {
+                                    Text(
+                                        text = groupName.ifBlank { stringResource(R.string.no_tags) },
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                        style = MaterialTheme.typography.titleSmall,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+                        }
+
+                        items(groupApps, key = { "${groupName}_${it.packageName}" }) { app ->
+                            Box {
+                                AppItem(
+                                    app = app,
+                                    onClick = { onAppClick(app, null) },
+                                    onLongClick = { menuApp = app }
                                 )
-//                                在部分环境下无效，先注释掉
-//                                DropdownMenuItem(
-//                                    text = { Text(stringResource(R.string.uninstall_app)) },
-//                                    onClick = {
-//                                        menuApp = null
-//                                        val intent = Intent(Intent.ACTION_DELETE, Uri.parse("package:${app.packageName}"))
-//                                        context.startActivity(intent)
-//                                    }
-//                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.extract_apk)) },
-                                    onClick = {
-                                        menuApp = null
-                                        viewModel.startExtraction(context, app.packageName, app.appName)
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.share_apk)) },
-                                    onClick = {
-                                        menuApp = null
-                                        ApkHelper.shareApk(context, app.packageName, app.appName)
-                                    }
-                                )
+                                
+                                DropdownMenu(
+                                    expanded = menuApp == app,
+                                    onDismissRequest = { menuApp = null }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.edit_note)) },
+                                        onClick = {
+                                            menuApp = null
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
+                                            context.startActivity(intent)
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.extract_apk)) },
+                                        onClick = {
+                                            menuApp = null
+                                            viewModel.startExtraction(context, app.packageName, app.appName)
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.share_apk)) },
+                                        onClick = {
+                                            menuApp = null
+                                            ApkHelper.shareApk(context, app.packageName, app.appName)
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

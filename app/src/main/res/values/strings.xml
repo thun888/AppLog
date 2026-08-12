@@ -131,4 +131,15 @@
     <string name="tags_removed_diff">Removed tags: %s</string>
     <string name="tags_placeholder">Press Enter to add tags</string>
     <string name="remove_tag">Remove %s</string>
+
+    <string name="search_hint">Search apps, packages, notes...</string>
+    <string name="sort_by">Sort by</string>
+    <string name="sort_name">Name</string>
+    <string name="sort_package">Package</string>
+    <string name="sort_install_time">Install Time</string>
+    <string name="sort_update_time">Update Time</string>
+    <string name="group_by">Group by</string>
+    <string name="group_none">None</string>
+    <string name="group_tags">Tags</string>
+    <string name="no_tags">No Tags</string>
 </resources>

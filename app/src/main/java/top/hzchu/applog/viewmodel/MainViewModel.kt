@@ -25,6 +25,14 @@ import top.hzchu.applog.receiver.PackageChangeReceiver
 import top.hzchu.applog.scanner.AppScanner
 import top.hzchu.applog.serializer.AppListSerializer
 
+enum class AppSortOrder {
+    NAME, PACKAGE_NAME, INSTALL_TIME, UPDATE_TIME
+}
+
+enum class AppGrouping {
+    NONE, TAGS
+}
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     companion object {
@@ -66,11 +74,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val showUserApps = _showUserApps.asStateFlow()
 
-    val filteredApps = combine(_apps, _showSystemApps, _showUserApps) { apps, showSystem, showUser ->
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    private val _sortOrder = MutableStateFlow(AppSortOrder.NAME)
+    val sortOrder = _sortOrder.asStateFlow()
+
+    private val _grouping = MutableStateFlow(AppGrouping.NONE)
+    val grouping = _grouping.asStateFlow()
+
+    val filteredApps = combine(
+        _apps, _showSystemApps, _showUserApps, _searchQuery, _sortOrder
+    ) { apps, showSystem, showUser, query, sort ->
         apps.filter { app ->
-            if (app.appType == AppInfo.AppType.SYSTEM) showSystem else showUser
+            val matchesFilter = if (app.appType == AppInfo.AppType.SYSTEM) showSystem else showUser
+            val matchesSearch = query.isBlank() || 
+                    app.appName.contains(query, ignoreCase = true) || 
+                    app.packageName.contains(query, ignoreCase = true) || 
+                    app.note.contains(query, ignoreCase = true)
+            matchesFilter && matchesSearch
+        }.let { filtered ->
+            when (sort) {
+                AppSortOrder.NAME -> filtered.sortedBy { it.appName.lowercase() }
+                AppSortOrder.PACKAGE_NAME -> filtered.sortedBy { it.packageName.lowercase() }
+                AppSortOrder.INSTALL_TIME -> filtered.sortedByDescending { it.firstInstallTime }
+                AppSortOrder.UPDATE_TIME -> filtered.sortedByDescending { it.lastUpdateTime }
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val groupedApps = combine(filteredApps, _grouping) { apps, grouping ->
+        when (grouping) {
+            AppGrouping.NONE -> mapOf("" to apps)
+            AppGrouping.TAGS -> {
+                val result = mutableMapOf<String, MutableList<AppInfo>>()
+                apps.forEach { app ->
+                    val tags = app.tags.split(", ").filter { it.isNotEmpty() }
+                    if (tags.isEmpty()) {
+                        result.getOrPut("") { mutableListOf() }.add(app)
+                    } else {
+                        tags.forEach { tag ->
+                            result.getOrPut(tag) { mutableListOf() }.add(app)
+                        }
+                    }
+                }
+                result.mapValues { it.value.toList() }.toSortedMap { a, b ->
+                    if (a == "") 1 else if (b == "") -1 else a.lowercase().compareTo(b.lowercase())
+                }
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
@@ -816,6 +869,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<Application>()
             .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_SHOW_USER_APPS, show).apply()
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setSortOrder(order: AppSortOrder) {
+        _sortOrder.value = order
+    }
+
+    fun setGrouping(grouping: AppGrouping) {
+        _grouping.value = grouping
     }
 
     override fun onCleared() {
