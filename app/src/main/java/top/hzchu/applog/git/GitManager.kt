@@ -40,19 +40,46 @@ class GitManager(private val context: Context) {
             try { Git.open(repoDir) } catch (_: Exception) { null }
         } else null
 
-    suspend fun init(): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun init(initialBranch: String = DEFAULT_BRANCH): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             if (!repoDir.exists()) repoDir.mkdirs()
-            val existingGit = git
-            if (existingGit != null) {
+            val dotGit = File(repoDir, ".git")
+            
+            if (dotGit.exists()) {
+                val existingGit = Git.open(repoDir)
+                val current = existingGit.repository.branch
+                
+                // 如果当前是 unborn 状态（没有 commit）且分支名不匹配，则尝试切换
+                val hasCommits = try {
+                    existingGit.log().setMaxCount(1).call().iterator().hasNext()
+                } catch (_: Exception) {
+                    false
+                }
+                
+                if (!hasCommits && current != initialBranch) {
+                    existingGit.checkout().setCreateBranch(true).setName(initialBranch).call()
+                }
                 existingGit.close()
                 return@withContext Result.success(Unit)
             }
+            
             Git.init()
                 .setDirectory(repoDir)
-                .setInitialBranch(DEFAULT_BRANCH)
+                .setInitialBranch(initialBranch)
                 .call()
                 .close()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun resetRepository(): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            close()
+            if (repoDir.exists()) {
+                repoDir.deleteRecursively()
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -221,26 +248,35 @@ class GitManager(private val context: Context) {
         remoteUrl: String,
         username: String,
         password: String,
-        force: Boolean = false
+        force: Boolean = false,
+        ignoreSsl: Boolean = false
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val trimmedUrl = remoteUrl.trim()
+            val trimmedUser = username.trim()
+            val trimmedPass = password.trim()
+
+            if (ignoreSsl) {
+                disableSslVerification()
+            }
+
             git?.use { g ->
-                val remoteName = setupRemote(g, remoteUrl)
+                val remoteName = setupRemote(g, trimmedUrl)
                 val currentBranch = g.repository.branch ?: DEFAULT_BRANCH
 
                 val pushCommand = g.push()
                     .setRemote(remoteName)
-                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(username, password))
+                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
 
                 val specStr = if (force) "+refs/heads/$currentBranch" else "refs/heads/$currentBranch"
                 pushCommand.setRefSpecs(RefSpec("$specStr:refs/heads/$currentBranch"))
                 
                 pushCommand.call()
                 
-                // Update remote-tracking branch locally so getUnpushedCount() is accurate
+                // Update remote-tracking branch locally
                 g.fetch()
                     .setRemote(remoteName)
-                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(username, password))
+                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
                     .setRefSpecs(RefSpec("refs/heads/$currentBranch:refs/remotes/$remoteName/$currentBranch"))
                     .call()
                 
@@ -255,17 +291,26 @@ class GitManager(private val context: Context) {
         remoteUrl: String,
         username: String,
         password: String,
-        force: Boolean = false
+        force: Boolean = false,
+        ignoreSsl: Boolean = false
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val trimmedUrl = remoteUrl.trim()
+            val trimmedUser = username.trim()
+            val trimmedPass = password.trim()
+
+            if (ignoreSsl) {
+                disableSslVerification()
+            }
+
             git?.use { g ->
-                val remoteName = setupRemote(g, remoteUrl)
+                val remoteName = setupRemote(g, trimmedUrl)
                 val currentBranch = g.repository.branch ?: DEFAULT_BRANCH
 
                 if (force) {
                     g.fetch()
                         .setRemote(remoteName)
-                        .setCredentialsProvider(UsernamePasswordCredentialsProvider(username, password))
+                        .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
                         .call()
                     g.reset()
                         .setMode(ResetCommand.ResetType.HARD)
@@ -274,13 +319,30 @@ class GitManager(private val context: Context) {
                 } else {
                     g.pull()
                         .setRemote(remoteName)
-                        .setCredentialsProvider(UsernamePasswordCredentialsProvider(username, password))
+                        .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
                         .call()
                 }
                 Result.success(Unit)
             } ?: Result.failure(Exception("Repo not initialized"))
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private fun disableSslVerification() {
+        try {
+            val trustAllCerts = arrayOf<javax.net.ssl.TrustManager>(
+                object : javax.net.ssl.X509TrustManager {
+                    override fun getAcceptedIssuers(): Array<java.security.cert.X509Certificate>? = null
+                    override fun checkClientTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                    override fun checkServerTrusted(certs: Array<java.security.cert.X509Certificate>, authType: String) {}
+                }
+            )
+            val sc = javax.net.ssl.SSLContext.getInstance("SSL")
+            sc.init(null, trustAllCerts, java.security.SecureRandom())
+            javax.net.ssl.HttpsURLConnection.setDefaultSSLSocketFactory(sc.socketFactory)
+            javax.net.ssl.HttpsURLConnection.setDefaultHostnameVerifier { _, _ -> true }
+        } catch (_: Exception) {
         }
     }
 

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -64,6 +65,7 @@ fun SettingsScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var authorName by remember { mutableStateOf(gitAuthor) }
     var authorEmail by remember { mutableStateOf(gitEmail) }
+    var ignoreSsl by remember { mutableStateOf(viewModel.isIgnoreSslErrors()) }
     var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold()) }
     val debounceCount = viewModel.getDebounceCount()
     var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
@@ -228,6 +230,21 @@ fun SettingsScreen(
                     }
                 }
             )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.ignore_ssl), style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = ignoreSsl,
+                    onCheckedChange = {
+                        ignoreSsl = it
+                        viewModel.setIgnoreSslErrors(it)
+                    }
+                )
+            }
 
             HorizontalDivider()
 
@@ -238,7 +255,6 @@ fun SettingsScreen(
                 modifier = Modifier.clickable { onNavigateToBranches() }
             )
 
-            // Push / Pull
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -264,6 +280,51 @@ fun SettingsScreen(
                     Text(stringResource(R.string.pull))
                 }
             }
+            
+            HorizontalDivider()
+
+            var showResetDialog by remember { mutableStateOf(false) }
+            ListItem(
+                headlineContent = { 
+                    Text(
+                        stringResource(R.string.reset_repository),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                },
+                leadingContent = {
+                    Icon(
+                        imageVector = Icons.Filled.DeleteForever,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                },
+                modifier = Modifier.clickable { showResetDialog = true }
+            )
+
+            if (showResetDialog) {
+                AlertDialog(
+                    onDismissRequest = { showResetDialog = false },
+                    title = { Text(stringResource(R.string.confirm_title)) },
+                    text = { Text(stringResource(R.string.reset_confirm)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showResetDialog = false
+                                viewModel.resetRepository()
+                            },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(stringResource(R.string.confirm))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showResetDialog = false }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                    }
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

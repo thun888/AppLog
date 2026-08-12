@@ -95,6 +95,18 @@ fun AppDetailRow(label: String, value: String, isChanged: Boolean = false) {
 @Composable
 fun AppLogApp() {
     val viewModel: MainViewModel = viewModel()
+    val isFirstLaunch by viewModel.isFirstLaunch.collectAsState()
+
+    if (isFirstLaunch) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+            top.hzchu.applog.ui.screens.SetupScreen(
+                viewModel = viewModel,
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
+        return
+    }
+
     var selectedTab by remember { mutableStateOf(NavigationTab.APPS) }
     var selectedCommitId by remember { mutableStateOf<String?>(null) }
     var isManagingBranches by remember { mutableStateOf(false) }

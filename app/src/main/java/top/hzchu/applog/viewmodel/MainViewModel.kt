@@ -42,6 +42,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val KEY_GIT_AUTHOR_EMAIL = "git_author_email"
         private const val KEY_SHOW_SYSTEM_APPS = "show_system_apps"
         private const val KEY_SHOW_USER_APPS = "show_user_apps"
+        private const val KEY_FIRST_LAUNCH = "first_launch"
+        private const val KEY_IGNORE_SSL = "ignore_ssl_errors"
     }
 
     private val appScanner = AppScanner(application)
@@ -72,6 +74,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+
+    private val _isFirstLaunch = MutableStateFlow(
+        application.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_FIRST_LAUNCH, true)
+    )
+    val isFirstLaunch = _isFirstLaunch.asStateFlow()
 
     private val _commits = MutableStateFlow<List<CommitInfo>>(emptyList())
     val commits: StateFlow<List<CommitInfo>> = _commits.asStateFlow()
@@ -175,12 +183,47 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            gitManager.init()
-            loadMetadataFromWorkingFile()
-            loadBranches()
-            loadHistory()
-            if (getAutoScanOnStart()) {
-                scanApps()
+            if (!_isFirstLaunch.value) {
+                initializeAfterOnboarding()
+            }
+        }
+    }
+
+    private suspend fun initializeAfterOnboarding() {
+        gitManager.init()
+        loadMetadataFromWorkingFile()
+        loadBranches()
+        loadHistory()
+        if (getAutoScanOnStart()) {
+            scanApps()
+        }
+    }
+
+    fun completeOnboarding(
+        url: String,
+        username: String,
+        password: String,
+        initialBranch: String,
+        authorName: String = "",
+        authorEmail: String = "",
+        ignoreSsl: Boolean = false
+    ) {
+        viewModelScope.launch {
+            val finalName = authorName.ifBlank { "AppLog" }
+            val finalEmail = authorEmail.ifBlank { "applog@local" }
+            val finalBranch = initialBranch.ifBlank { GitManager.DEFAULT_BRANCH }
+            
+            saveGitIdentity(finalName, finalEmail)
+            saveRemoteConfig(url, username, password)
+            setIgnoreSslErrors(ignoreSsl)
+            
+            gitManager.init(finalBranch).onSuccess {
+                _isFirstLaunch.value = false
+                getApplication<Application>().getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+                    .edit().putBoolean(KEY_FIRST_LAUNCH, false).apply()
+                initializeAfterOnboarding()
+            }.onFailure {
+                showToast(getApplication<Application>().getString(R.string.error_prefix, it.message))
             }
         }
     }
@@ -601,7 +644,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _toastMessage.value = getApplication<Application>().getString(R.string.pushing)
             try {
-                val result = gitManager.pushToRemote(remoteUrl, username, password, force)
+                val ignoreSsl = isIgnoreSslErrors()
+                val result = gitManager.pushToRemote(remoteUrl, username, password, force, ignoreSsl)
                 if (result.isSuccess) {
                     _toastMessage.value = getApplication<Application>().getString(R.string.push_success)
                     loadHistory()
@@ -618,7 +662,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _toastMessage.value = getApplication<Application>().getString(R.string.pulling)
             try {
-                val result = gitManager.pullFromRemote(remoteUrl, username, password, force)
+                val ignoreSsl = isIgnoreSslErrors()
+                val result = gitManager.pullFromRemote(remoteUrl, username, password, force, ignoreSsl)
                 if (result.isSuccess) {
                     _toastMessage.value = getApplication<Application>().getString(R.string.pull_success)
                     loadHistory()
@@ -702,9 +747,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveRemoteConfig(url: String, username: String, password: String) {
         remotePrefs.edit()
-            .putString(KEY_REMOTE_URL, url)
-            .putString(KEY_REMOTE_USER, username)
-            .putString(KEY_REMOTE_PASS, password)
+            .putString(KEY_REMOTE_URL, url.trim())
+            .putString(KEY_REMOTE_USER, username.trim())
+            .putString(KEY_REMOTE_PASS, password.trim())
             .apply()
     }
 
@@ -714,6 +759,28 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             remotePrefs.getString(KEY_REMOTE_USER, "") ?: "",
             remotePrefs.getString(KEY_REMOTE_PASS, "") ?: ""
         )
+    }
+
+    fun isIgnoreSslErrors(): Boolean {
+        return remotePrefs.getBoolean(KEY_IGNORE_SSL, false)
+    }
+    fun setIgnoreSslErrors(ignore: Boolean) {
+        remotePrefs.edit().putBoolean(KEY_IGNORE_SSL, ignore).apply()
+    }
+
+    fun resetRepository() {
+        viewModelScope.launch {
+            gitManager.resetRepository().onSuccess {
+                _isFirstLaunch.value = true
+                getApplication<Application>().getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+                    .edit().putBoolean(KEY_FIRST_LAUNCH, true).apply()
+                _apps.value = emptyList()
+                _commits.value = emptyList()
+                showToast(getApplication<Application>().getString(R.string.reset_success))
+            }.onFailure {
+                showToast(getApplication<Application>().getString(R.string.error_prefix, it.message))
+            }
+        }
     }
 
     // --- Restore Helper ---

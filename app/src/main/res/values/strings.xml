@@ -67,6 +67,7 @@
     <string name="save_success">Settings saved</string>
     <string name="cancel">Cancel</string>
     <string name="git_identity">Git Identity</string>
+    <string name="optional_suffix">(Optional)</string>
     <string name="git_author_name">Author Name</string>
     <string name="git_author_email">Author Email</string>
     <string name="save_git_identity">Save Identity</string>
@@ -78,12 +79,22 @@
     <string name="remote_url">Remote URL</string>
     <string name="username">Username</string>
     <string name="password_token">Password / Token</string>
+    <string name="ignore_ssl">Ignore SSL Errors (Insecure)</string>
+    <string name="reset_repository">Reset Local Repository</string>
+    <string name="reset_confirm">This will delete all local history and settings. Continue?</string>
+    <string name="reset_success">Repository reset successful</string>
     <string name="save_remote_config">Save Remote Config</string>
     <string name="notification_channel_name">App Change Alert</string>
     <string name="notification_channel_desc">App install/uninstall/update alerts</string>
     <string name="notif_title_list_changed">App list changed</string>
     <string name="notif_text_changes_detected">Detected %d changes, consider committing a new snapshot</string>
     <string name="remind_later">Remind later</string>
+
+    <string name="setup_title">Welcome to AppLog</string>
+    <string name="setup_desc">Set up your local Git repository to start tracking app changes.</string>
+    <string name="setup_git_branch">Initial Branch Name</string>
+    <string name="setup_start">Get Started</string>
+    <string name="setup_error_empty">Please fill in all required fields</string>
 
     <string name="scan_failed">Scan failed: %s</string>
     <string name="committed">Committed: %s</string>
