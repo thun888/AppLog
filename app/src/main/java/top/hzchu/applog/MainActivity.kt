@@ -1,5 +1,7 @@
 package top.hzchu.applog
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -8,7 +10,9 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -78,6 +82,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AppDetailRow(
     label: String,
@@ -85,10 +90,19 @@ fun AppDetailRow(
     isChanged: Boolean = false,
     onClick: (() -> Unit)? = null
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .combinedClickable(
+                onClick = { onClick?.invoke() },
+                onLongClick = {
+                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                    val clip = ClipData.newPlainText(label, value)
+                    clipboard.setPrimaryClip(clip)
+                    Toast.makeText(context, R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show()
+                }
+            )
             .padding(vertical = 4.dp)
     ) {
         Text(
@@ -246,6 +260,23 @@ fun AppLogApp() {
         val app = editingApp!!
         val prev = previousAppForDiff
         val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
+        val storeMap = mapOf(
+            "com.xiaomi.market" to R.string.store_xiaomi,
+            "com.heytap.market" to R.string.store_oppo,
+            "com.bbk.appstore" to R.string.store_vivo,
+            "com.huawei.appmarket" to R.string.store_huawei,
+            "com.meizu.mstore" to R.string.store_meizu,
+            "com.android.vending" to R.string.google_play_store,
+            "com.sec.android.app.samsungapps" to R.string.store_samsung,
+            "com.hihonor.appmarket" to R.string.store_honor,
+            "com.lenovo.leos.appstore" to R.string.store_lenovo,
+            "com.yulong.android.coolmart" to R.string.store_coolpad,
+            "com.coolapk.market" to R.string.store_coolapk,
+            "com.wandoujia.phoenix2" to R.string.store_wandoujia,
+            "com.tencent.android.qqdownloader" to R.string.store_tencent,
+            "com.baidu.appsearch" to R.string.store_baidu,
+            "com.qihoo.appstore" to R.string.store_360
+        )
         AlertDialog(
             onDismissRequest = { editingApp = null },
             title = { Text(app.appName) },
@@ -275,20 +306,30 @@ fun AppLogApp() {
                         value = sdf.format(Date(app.lastUpdateTime)),
                         isChanged = prev != null && prev.lastUpdateTime != app.lastUpdateTime
                     )
-                    val installerText = if (app.installerPackageName == "com.android.vending") {
-                        "${app.installerPackageName} (${stringResource(R.string.google_play_store)})"
+                    
+                    val storeResId = storeMap[app.installerPackageName]
+                    val installerText = if (storeResId != null) {
+                        "${app.installerPackageName} (${stringResource(storeResId)})"
                     } else {
                         app.installerPackageName.ifEmpty { "无" }
                     }
-                    val onInstallerClick: (() -> Unit)? = if (app.installerPackageName == "com.android.vending") {
+                    val onInstallerClick: (() -> Unit)? = if (storeResId != null) {
                         {
                             try {
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
-                                intent.setPackage("com.android.vending")
+                                intent.setPackage(app.installerPackageName)
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${app.packageName}"))
-                                context.startActivity(intent)
+                                if (app.installerPackageName == "com.android.vending") {
+                                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${app.packageName}"))
+                                    context.startActivity(webIntent)
+                                } else {
+                                    // Fallback to general market intent if specific store fails
+                                    try {
+                                        val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
+                                        context.startActivity(genericIntent)
+                                    } catch (_: Exception) {}
+                                }
                             }
                         }
                     } else null

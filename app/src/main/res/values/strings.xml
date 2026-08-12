@@ -117,7 +117,21 @@
     <string name="pull_error">Pull error: %s</string>
     <string name="extract_apk">Extract APK</string>
     <string name="open_app">Open</string>
-    <string name="google_play_store">Google Play Store</string>
+    <string name="google_play_store">Google Play</string>
+    <string name="store_xiaomi">Xiaomi Market</string>
+    <string name="store_oppo">OPPO App Market</string>
+    <string name="store_vivo">vivo App Store</string>
+    <string name="store_huawei">Huawei AppGallery</string>
+    <string name="store_meizu">Meizu App Store</string>
+    <string name="store_samsung">Galaxy Store</string>
+    <string name="store_honor">Honor App Market</string>
+    <string name="store_lenovo">Lenovo App Store</string>
+    <string name="store_coolpad">Coolpad App Store</string>
+    <string name="store_coolapk">Coolapk</string>
+    <string name="store_wandoujia">Wandoujia</string>
+    <string name="store_tencent">Yingyongbao</string>
+    <string name="store_baidu">Baidu App Search</string>
+    <string name="store_360">360 App Store</string>
     <string name="app_not_openable">This app cannot be opened</string>
     <string name="share_apk">Share APK</string>
     <string name="uninstall_app">Uninstall</string>
@@ -156,4 +170,5 @@
     <string name="new_version_available">New version available: %s</string>
     <string name="update_now">Update Now</string>
     <string name="current_version">Current Version: %s</string>
+    <string name="copied_to_clipboard">Copied to clipboard</string>
 </resources>
