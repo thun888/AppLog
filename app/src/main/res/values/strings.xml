@@ -47,6 +47,10 @@
     <string name="pull">Pull</string>
     <string name="force_push">Force Push</string>
     <string name="force_pull">Force Pull</string>
+    <string name="confirm_title">Confirm</string>
+    <string name="confirm_force_push">Force push will overwrite remote history. Continue?</string>
+    <string name="confirm_force_pull">Force pull will discard local changes. Continue?</string>
+    <string name="confirm">Confirm</string>
     <string name="edit_note">App Details</string>
     <string name="app_info_package">Package:</string>
     <string name="app_info_version">Version:</string>

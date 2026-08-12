@@ -3,32 +3,36 @@ package top.hzchu.applog.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -37,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -59,9 +64,10 @@ fun SettingsScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var authorName by remember { mutableStateOf(gitAuthor) }
     var authorEmail by remember { mutableStateOf(gitEmail) }
-    var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold().toString()) }
+    var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold()) }
     val debounceCount = viewModel.getDebounceCount()
     var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
+    var pendingForceAction by remember { mutableStateOf<String?>(null) } // "push" or "pull"
 
     Scaffold(
         modifier = modifier,
@@ -102,22 +108,43 @@ fun SettingsScreen(
             // Debounce Settings
             Text(stringResource(R.string.debounce_settings), style = MaterialTheme.typography.titleMedium)
             Text(
-                text = stringResource(R.string.current_counter, debounceCount, threshold.toIntOrNull() ?: 0),
+                text = stringResource(R.string.current_counter, debounceCount, threshold),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            OutlinedTextField(
-                value = threshold,
-                onValueChange = { threshold = it },
-                label = { Text(stringResource(R.string.notification_threshold)) },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(onClick = {
-                val t = threshold.toIntOrNull() ?: 5
-                viewModel.setDebounceThreshold(t)
-                threshold = t.toString()
-            }) {
-                Text(stringResource(R.string.save_threshold))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.notification_threshold))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedIconButton(
+                        onClick = {
+                            if (threshold > 1) {
+                                threshold--
+                                viewModel.setDebounceThreshold(threshold)
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Filled.Remove, contentDescription = "Decrease")
+                    }
+                    Text(
+                        text = threshold.toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+                    OutlinedIconButton(
+                        onClick = {
+                            if (threshold < 50) {
+                                threshold++
+                                viewModel.setDebounceThreshold(threshold)
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = "Increase")
+                    }
+                }
             }
 
             HorizontalDivider()
@@ -128,19 +155,26 @@ fun SettingsScreen(
                 value = authorName,
                 onValueChange = { authorName = it },
                 label = { Text(stringResource(R.string.git_author_name)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (!state.isFocused) {
+                            viewModel.saveGitIdentity(authorName, authorEmail)
+                        }
+                    }
             )
             OutlinedTextField(
                 value = authorEmail,
                 onValueChange = { authorEmail = it },
                 label = { Text(stringResource(R.string.git_author_email)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (!state.isFocused) {
+                            viewModel.saveGitIdentity(authorName, authorEmail)
+                        }
+                    }
             )
-            Button(onClick = {
-                viewModel.saveGitIdentity(authorName, authorEmail)
-            }) {
-                Text(stringResource(R.string.save_git_identity))
-            }
 
             HorizontalDivider()
 
@@ -150,19 +184,40 @@ fun SettingsScreen(
                 value = url,
                 onValueChange = { url = it },
                 label = { Text(stringResource(R.string.remote_url)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (!state.isFocused) {
+                            viewModel.saveGitIdentity(authorName, authorEmail)
+                            viewModel.saveRemoteConfig(url, username, password)
+                        }
+                    }
             )
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
                 label = { Text(stringResource(R.string.username)) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (!state.isFocused) {
+                            viewModel.saveGitIdentity(authorName, authorEmail)
+                            viewModel.saveRemoteConfig(url, username, password)
+                        }
+                    }
             )
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text(stringResource(R.string.password_token)) },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (!state.isFocused) {
+                            viewModel.saveGitIdentity(authorName, authorEmail)
+                            viewModel.saveRemoteConfig(url, username, password)
+                        }
+                    },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -173,12 +228,6 @@ fun SettingsScreen(
                     }
                 }
             )
-            Button(onClick = {
-                viewModel.saveGitIdentity(authorName, authorEmail)
-                viewModel.saveRemoteConfig(url, username, password)
-            }) {
-                Text(stringResource(R.string.save_remote_config))
-            }
 
             HorizontalDivider()
 
@@ -220,27 +269,67 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = {
-                        viewModel.saveGitIdentity(authorName, authorEmail)
-                        viewModel.saveRemoteConfig(url, username, password)
-                        viewModel.pushToRemote(url, username, password, force = true)
-                    },
-                    modifier = Modifier.weight(1f)
+                    onClick = { pendingForceAction = "push" },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
                 ) {
                     Text(stringResource(R.string.force_push))
                 }
                 Button(
-                    onClick = {
-                        viewModel.saveGitIdentity(authorName, authorEmail)
-                        viewModel.saveRemoteConfig(url, username, password)
-                        viewModel.pullFromRemote(url, username, password, force = true)
-                    },
-                    modifier = Modifier.weight(1f)
+                    onClick = { pendingForceAction = "pull" },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
                 ) {
                     Text(stringResource(R.string.force_pull))
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    if (pendingForceAction != null) {
+        AlertDialog(
+            onDismissRequest = { pendingForceAction = null },
+            title = { Text(stringResource(R.string.confirm_title)) },
+            text = {
+                Text(
+                    if (pendingForceAction == "push")
+                        stringResource(R.string.confirm_force_push)
+                    else
+                        stringResource(R.string.confirm_force_pull)
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val action = pendingForceAction
+                        pendingForceAction = null
+                        viewModel.saveGitIdentity(authorName, authorEmail)
+                        viewModel.saveRemoteConfig(url, username, password)
+                        if (action == "push") {
+                            viewModel.pushToRemote(url, username, password, force = true)
+                        } else {
+                            viewModel.pullFromRemote(url, username, password, force = true)
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingForceAction = null }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }

@@ -47,6 +47,10 @@
     <string name="pull">拉取</string>
     <string name="force_push">强制推送</string>
     <string name="force_pull">强制拉取</string>
+    <string name="confirm_title">确认操作</string>
+    <string name="confirm_force_push">强制推送将覆盖远程仓库历史，确定继续？</string>
+    <string name="confirm_force_pull">强制拉取将丢弃本地更改，确定继续？</string>
+    <string name="confirm">确定</string>
     <string name="edit_note">应用详情</string>
     <string name="app_info_package">包名:</string>
     <string name="app_info_version">版本:</string>

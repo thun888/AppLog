@@ -689,7 +689,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .putString(KEY_GIT_AUTHOR_NAME, authorName)
             .putString(KEY_GIT_AUTHOR_EMAIL, authorEmail)
             .apply()
-        showToast(getApplication<Application>().getString(R.string.save_success))
     }
 
     fun getGitIdentity(): Pair<String, String> {
@@ -707,7 +706,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             .putString(KEY_REMOTE_USER, username)
             .putString(KEY_REMOTE_PASS, password)
             .apply()
-        showToast(getApplication<Application>().getString(R.string.save_success))
     }
 
     fun getRemoteConfig(): Triple<String, String, String> {
