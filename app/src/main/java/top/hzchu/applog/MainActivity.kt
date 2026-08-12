@@ -110,6 +110,7 @@ fun AppLogApp() {
     var selectedTab by remember { mutableStateOf(NavigationTab.APPS) }
     var selectedCommitId by remember { mutableStateOf<String?>(null) }
     var isManagingBranches by remember { mutableStateOf(false) }
+    var isShowingAbout by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val toastMessage by viewModel.toastMessage.collectAsState()
     val showCommitDialog by viewModel.showCommitDialog.collectAsState()
@@ -158,7 +159,7 @@ fun AppLogApp() {
             }
         },
         floatingActionButton = {
-            if (selectedTab == NavigationTab.APPS && selectedCommitId == null && !isManagingBranches) {
+            if (selectedTab == NavigationTab.APPS && selectedCommitId == null && !isManagingBranches && !isShowingAbout) {
                 FloatingActionButton(
                     onClick = { viewModel.prepareCommit() },
                     containerColor = MaterialTheme.colorScheme.primaryContainer
@@ -188,6 +189,12 @@ fun AppLogApp() {
                 onBack = { isManagingBranches = false },
                 modifier = Modifier.padding(innerPadding)
             )
+        } else if (isShowingAbout) {
+            top.hzchu.applog.ui.screens.AboutScreen(
+                viewModel = viewModel,
+                onBack = { isShowingAbout = false },
+                modifier = Modifier.padding(innerPadding)
+            )
         } else {
             when (selectedTab) {
                 NavigationTab.APPS -> AppsScreen(
@@ -212,6 +219,7 @@ fun AppLogApp() {
                 NavigationTab.SETTINGS -> SettingsScreen(
                     viewModel = viewModel,
                     onNavigateToBranches = { isManagingBranches = true },
+                    onNavigateToAbout = { isShowingAbout = true },
                     modifier = Modifier.padding(innerPadding)
                 )
             }

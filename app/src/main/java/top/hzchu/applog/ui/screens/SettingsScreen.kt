@@ -16,6 +16,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -55,6 +56,7 @@ import top.hzchu.applog.viewmodel.MainViewModel
 fun SettingsScreen(
     viewModel: MainViewModel,
     onNavigateToBranches: () -> Unit,
+    onNavigateToAbout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (remoteUrl, remoteUser, remotePass) = viewModel.getRemoteConfig()
@@ -74,7 +76,14 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier,
         topBar = {
-            TopAppBar(title = { Text(stringResource(R.string.tab_settings)) })
+            TopAppBar(
+                title = { Text(stringResource(R.string.tab_settings)) },
+                actions = {
+                    IconButton(onClick = onNavigateToAbout) {
+                        Icon(Icons.Filled.Info, contentDescription = stringResource(R.string.about_title))
+                    }
+                }
+            )
         }
     ) { padding ->
         Column(

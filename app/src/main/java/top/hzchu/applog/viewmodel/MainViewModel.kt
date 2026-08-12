@@ -182,6 +182,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _extractingProgress = MutableStateFlow<Float?>(null)
     val extractingProgress: StateFlow<Float?> = _extractingProgress.asStateFlow()
 
+    private val _latestVersion = MutableStateFlow<String?>(null)
+    val latestVersion = _latestVersion.asStateFlow()
+
+    private val _isCheckingUpdates = MutableStateFlow(false)
+    val isCheckingUpdates = _isCheckingUpdates.asStateFlow()
+
     fun showToast(message: String) {
         _toastMessage.value = message
     }
@@ -881,6 +887,30 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setGrouping(grouping: AppGrouping) {
         _grouping.value = grouping
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _isCheckingUpdates.value = true
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val url = java.net.URL("https://api.github.com/repos/thun888/AppLog/releases/latest")
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.requestMethod = "GET"
+                    connection.connectTimeout = 5000
+                    connection.readTimeout = 5000
+                    
+                    val content = connection.inputStream.bufferedReader().use { it.readText() }
+                    val json = org.json.JSONObject(content)
+                    json.getString("tag_name")
+                }
+                _latestVersion.value = result
+            } catch (e: Exception) {
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, e.message)
+            } finally {
+                _isCheckingUpdates.value = false
+            }
+        }
     }
 
     override fun onCleared() {
