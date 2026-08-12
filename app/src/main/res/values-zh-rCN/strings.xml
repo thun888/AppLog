@@ -142,6 +142,8 @@
     <string name="group_none">无</string>
     <string name="group_tags">标签</string>
     <string name="no_tags">无标签</string>
+    <string name="collapse_group">折叠分组</string>
+    <string name="expand_group">展开分组</string>
 
     <string name="about_title">关于 AppLog</string>
     <string name="github_repo">GitHub 仓库</string>

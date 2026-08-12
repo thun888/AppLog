@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
@@ -85,6 +87,7 @@ fun AppsScreen(
     var showGroupMenu by remember { mutableStateOf(false) }
     var isSearchActive by remember { mutableStateOf(false) }
     var menuApp by remember { mutableStateOf<AppInfo?>(null) }
+    var collapsedGroups by remember { mutableStateOf(setOf<String>()) }
 
     if (extractProgress != null) {
         Dialog(
@@ -295,54 +298,80 @@ fun AppsScreen(
                     groupedApps.forEach { (groupName, groupApps) ->
                         if (currentGrouping != AppGrouping.NONE) {
                             stickyHeader {
+                                val isCollapsed = groupName in collapsedGroups
                                 Card(
+                                    onClick = {
+                                        collapsedGroups = if (isCollapsed) {
+                                            collapsedGroups - groupName
+                                        } else {
+                                            collapsedGroups + groupName
+                                        }
+                                    },
                                     modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                     shape = MaterialTheme.shapes.small
                                 ) {
-                                    Text(
-                                        text = groupName.ifBlank { stringResource(R.string.no_tags) },
+                                    Row(
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                        style = MaterialTheme.typography.titleSmall,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = groupName.ifBlank { stringResource(R.string.no_tags) },
+                                            modifier = Modifier.weight(1f),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                        Icon(
+                                            imageVector = if (isCollapsed) {
+                                                Icons.Filled.KeyboardArrowDown
+                                            } else {
+                                                Icons.Filled.KeyboardArrowUp
+                                            },
+                                            contentDescription = stringResource(
+                                                if (isCollapsed) R.string.expand_group else R.string.collapse_group
+                                            ),
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
                                 }
                             }
                         }
 
-                        items(groupApps, key = { "${groupName}_${it.packageName}" }) { app ->
-                            Box {
-                                AppItem(
-                                    app = app,
-                                    onClick = { onAppClick(app, null) },
-                                    onLongClick = { menuApp = app }
-                                )
-                                
-                                DropdownMenu(
-                                    expanded = menuApp == app,
-                                    onDismissRequest = { menuApp = null }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.edit_note)) },
-                                        onClick = {
-                                            menuApp = null
-                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
-                                            context.startActivity(intent)
-                                        }
+                        if (currentGrouping == AppGrouping.NONE || groupName !in collapsedGroups) {
+                            items(groupApps, key = { "${groupName}_${it.packageName}" }) { app ->
+                                Box {
+                                    AppItem(
+                                        app = app,
+                                        onClick = { onAppClick(app, null) },
+                                        onLongClick = { menuApp = app }
                                     )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.extract_apk)) },
-                                        onClick = {
-                                            menuApp = null
-                                            viewModel.startExtraction(context, app.packageName, app.appName)
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.share_apk)) },
-                                        onClick = {
-                                            menuApp = null
-                                            ApkHelper.shareApk(context, app.packageName, app.appName)
-                                        }
-                                    )
+
+                                    DropdownMenu(
+                                        expanded = menuApp == app,
+                                        onDismissRequest = { menuApp = null }
+                                    ) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.edit_note)) },
+                                            onClick = {
+                                                menuApp = null
+                                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${app.packageName}"))
+                                                context.startActivity(intent)
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.extract_apk)) },
+                                            onClick = {
+                                                menuApp = null
+                                                viewModel.startExtraction(context, app.packageName, app.appName)
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.share_apk)) },
+                                            onClick = {
+                                                menuApp = null
+                                                ApkHelper.shareApk(context, app.packageName, app.appName)
+                                            }
+                                        )
+                                    }
                                 }
                             }
                         }
