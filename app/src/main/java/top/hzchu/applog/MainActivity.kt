@@ -1,11 +1,14 @@
 package top.hzchu.applog
 
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import top.hzchu.applog.model.AppInfo
@@ -75,8 +79,18 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun AppDetailRow(label: String, value: String, isChanged: Boolean = false) {
-    Column(modifier = Modifier.padding(vertical = 4.dp)) {
+fun AppDetailRow(
+    label: String,
+    value: String,
+    isChanged: Boolean = false,
+    onClick: (() -> Unit)? = null
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(vertical = 4.dp)
+    ) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
@@ -86,7 +100,8 @@ fun AppDetailRow(label: String, value: String, isChanged: Boolean = false) {
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = if (isChanged) FontWeight.Bold else FontWeight.Normal,
-            color = if (isChanged) DiffUpdatedColor else MaterialTheme.colorScheme.onSurface
+            color = if (isChanged) DiffUpdatedColor else MaterialTheme.colorScheme.onSurface,
+            textDecoration = if (onClick != null) TextDecoration.Underline else TextDecoration.None
         )
     }
 }
@@ -260,10 +275,29 @@ fun AppLogApp() {
                         value = sdf.format(Date(app.lastUpdateTime)),
                         isChanged = prev != null && prev.lastUpdateTime != app.lastUpdateTime
                     )
+                    val installerText = if (app.installerPackageName == "com.android.vending") {
+                        "${app.installerPackageName} (${stringResource(R.string.google_play_store)})"
+                    } else {
+                        app.installerPackageName.ifEmpty { "无" }
+                    }
+                    val onInstallerClick: (() -> Unit)? = if (app.installerPackageName == "com.android.vending") {
+                        {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
+                                intent.setPackage("com.android.vending")
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${app.packageName}"))
+                                context.startActivity(intent)
+                            }
+                        }
+                    } else null
+
                     AppDetailRow(
                         label = stringResource(R.string.app_info_installer),
-                        value = app.installerPackageName.ifEmpty { "无" },
-                        isChanged = prev != null && prev.installerPackageName != app.installerPackageName
+                        value = installerText,
+                        isChanged = prev != null && prev.installerPackageName != app.installerPackageName,
+                        onClick = onInstallerClick
                     )
                     AppDetailRow(
                         label = stringResource(R.string.app_info_signature),

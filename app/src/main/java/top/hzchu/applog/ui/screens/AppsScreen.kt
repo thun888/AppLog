@@ -350,6 +350,18 @@ fun AppsScreen(
                                         onDismissRequest = { menuApp = null }
                                     ) {
                                         DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.open_app)) },
+                                            onClick = {
+                                                menuApp = null
+                                                val launchIntent = context.packageManager.getLaunchIntentForPackage(app.packageName)
+                                                if (launchIntent != null) {
+                                                    context.startActivity(launchIntent)
+                                                } else {
+                                                    viewModel.showToast(context.getString(R.string.app_not_openable))
+                                                }
+                                            }
+                                        )
+                                        DropdownMenuItem(
                                             text = { Text(stringResource(R.string.edit_note)) },
                                             onClick = {
                                                 menuApp = null

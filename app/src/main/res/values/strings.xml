@@ -116,6 +116,9 @@
     <string name="pull_failed">Pull failed: %s</string>
     <string name="pull_error">Pull error: %s</string>
     <string name="extract_apk">Extract APK</string>
+    <string name="open_app">Open</string>
+    <string name="google_play_store">Google Play Store</string>
+    <string name="app_not_openable">This app cannot be opened</string>
     <string name="share_apk">Share APK</string>
     <string name="uninstall_app">Uninstall</string>
     <string name="extract_success">APK extracted to Downloads</string>
