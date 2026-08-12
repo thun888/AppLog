@@ -17,6 +17,7 @@
     <string name="orphan_branch">Orphan Branch</string>
     <string name="orphan_branch_desc">Start a completely new commit history</string>
     <string name="delete_branch_confirm">Delete branch \"%s\"?</string>
+    <string name="delete">Delete</string>
     <string name="branch_created">Branch \"%s\" created</string>
     <string name="branch_deleted">Branch \"%s\" deleted</string>
     <string name="filter">Filter</string>

@@ -215,7 +215,7 @@ fun BranchScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
-                    Text(stringResource(R.string.create)) // Using create as generic confirm for now or update strings
+                    Text(stringResource(R.string.delete))
                 }
             },
             dismissButton = {
