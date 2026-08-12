@@ -108,6 +108,7 @@
     <string name="select_historical_commit">Please select a historical commit</string>
     <string name="tag_created">Tag \"%s\" created</string>
     <string name="tag_failed">Tag failed: %s</string>
+    <string name="tag_sync_failed">Tag created locally but failed to sync: %s. Local tag removed.</string>
     <string name="pushing">Pushing...</string>
     <string name="push_success">Push success</string>
     <string name="push_error">Push error: %s</string>

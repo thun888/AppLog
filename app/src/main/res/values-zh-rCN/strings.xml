@@ -108,6 +108,7 @@
     <string name="select_historical_commit">请选择一个历史提交</string>
     <string name="tag_created">标签 \"%s\" 已创建</string>
     <string name="tag_failed">创建标签失败: %s</string>
+    <string name="tag_sync_failed">标签已在本地创建但同步失败: %s。本地标签已移除。</string>
     <string name="pushing">正在推送...</string>
     <string name="push_success">推送成功</string>
     <string name="push_error">推送错误: %s</string>

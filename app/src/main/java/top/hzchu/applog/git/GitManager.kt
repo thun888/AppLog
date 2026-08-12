@@ -228,6 +228,17 @@ class GitManager(private val context: Context) {
         }
     }
 
+    suspend fun deleteTag(tagName: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            git?.use { g ->
+                g.tagDelete().setTags(tagName).call()
+                Result.success(Unit)
+            } ?: Result.failure(Exception("Repo not initialized"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private suspend fun setupRemote(git: Git, remoteUrl: String): String {
         val remoteList = git.remoteList().call()
         if (remoteList.any { it.name == REMOTE_NAME }) {
@@ -279,7 +290,37 @@ class GitManager(private val context: Context) {
                     .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
                     .setRefSpecs(RefSpec("refs/heads/$currentBranch:refs/remotes/$remoteName/$currentBranch"))
                     .call()
-                
+
+                Result.success(Unit)
+            } ?: Result.failure(Exception("Repo not initialized"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun pushTag(
+        tagName: String,
+        remoteUrl: String,
+        username: String,
+        password: String,
+        ignoreSsl: Boolean = false
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val trimmedUrl = remoteUrl.trim()
+            val trimmedUser = username.trim()
+            val trimmedPass = password.trim()
+
+            if (ignoreSsl) {
+                disableSslVerification()
+            }
+
+            git?.use { g ->
+                val remoteName = setupRemote(g, trimmedUrl)
+                g.push()
+                    .setRemote(remoteName)
+                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
+                    .setRefSpecs(RefSpec("refs/tags/$tagName:refs/tags/$tagName"))
+                    .call()
                 Result.success(Unit)
             } ?: Result.failure(Exception("Repo not initialized"))
         } catch (e: Exception) {

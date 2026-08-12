@@ -592,8 +592,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun createTag(commitId: String, tagName: String, message: String) {
         viewModelScope.launch {
             gitManager.createTag(commitId, tagName, message).onSuccess {
-                _toastMessage.value = getApplication<Application>().getString(R.string.tag_created, tagName)
-                loadHistory()
+                // Try to sync immediately if remote is configured
+                val (url, user, pass) = getRemoteConfig()
+                if (url.isNotBlank()) {
+                    val ignoreSsl = isIgnoreSslErrors()
+                    gitManager.pushTag(tagName, url, user, pass, ignoreSsl).onSuccess {
+                        _toastMessage.value = getApplication<Application>().getString(R.string.tag_created, tagName)
+                        loadHistory()
+                    }.onFailure { e ->
+                        // Sync failed, remove local tag as requested
+                        gitManager.deleteTag(tagName)
+                        _toastMessage.value = getApplication<Application>().getString(R.string.tag_sync_failed, e.message)
+                        loadHistory()
+                    }
+                } else {
+                    // No remote configured, just keep it local
+                    _toastMessage.value = getApplication<Application>().getString(R.string.tag_created, tagName)
+                    loadHistory()
+                }
             }.onFailure {
                 _toastMessage.value = getApplication<Application>().getString(R.string.tag_failed, it.message)
             }
