@@ -24,7 +24,7 @@ object InstallerUtils {
 
     fun getInstallerName(context: Context, installerPackageName: String?): String {
         if (installerPackageName.isNullOrBlank()) return context.getString(R.string.unknown_installer)
-        val resId = storeMap[installerPackageName]
+        val resId = getInstallerResId(installerPackageName)
         return if (resId != null) {
             context.getString(resId)
         } else {
@@ -37,5 +37,9 @@ object InstallerUtils {
                 installerPackageName
             }
         }
+    }
+
+    fun getInstallerResId(packageName: String?): Int? {
+        return storeMap[packageName]
     }
 }

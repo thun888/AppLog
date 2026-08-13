@@ -72,6 +72,7 @@ import top.hzchu.applog.ui.screens.CommitDetailScreen
 import top.hzchu.applog.ui.screens.HistoryScreen
 import top.hzchu.applog.ui.screens.SettingsScreen
 import top.hzchu.applog.ui.theme.AppLogTheme
+import top.hzchu.applog.utils.InstallerUtils
 import top.hzchu.applog.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -379,23 +380,6 @@ fun AppDialogs(
     // Note editing dialog
     if (editingApp != null) {
         val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
-        val storeMap = mapOf(
-            "com.xiaomi.market" to R.string.store_xiaomi,
-            "com.heytap.market" to R.string.store_oppo,
-            "com.bbk.appstore" to R.string.store_vivo,
-            "com.huawei.appmarket" to R.string.store_huawei,
-            "com.meizu.mstore" to R.string.store_meizu,
-            "com.android.vending" to R.string.google_play_store,
-            "com.sec.android.app.samsungapps" to R.string.store_samsung,
-            "com.hihonor.appmarket" to R.string.store_honor,
-            "com.lenovo.leos.appstore" to R.string.store_lenovo,
-            "com.yulong.android.coolmart" to R.string.store_coolpad,
-            "com.coolapk.market" to R.string.store_coolapk,
-            "com.wandoujia.phoenix2" to R.string.store_wandoujia,
-            "com.tencent.android.qqdownloader" to R.string.store_tencent,
-            "com.baidu.appsearch" to R.string.store_baidu,
-            "com.qihoo.appstore" to R.string.store_360
-        )
         AlertDialog(
             onDismissRequest = onDismissEditingApp,
             title = { Text(editingApp.appName) },
@@ -427,11 +411,12 @@ fun AppDialogs(
                         isChanged = previousAppForDiff != null && previousAppForDiff.lastUpdateTime != editingApp.lastUpdateTime
                     )
                     
-                    val storeResId = storeMap[editingApp.installerPackageName]
-                    val installerText = if (storeResId != null) {
-                        "${editingApp.installerPackageName} (${stringResource(storeResId)})"
+                    val storeResId = InstallerUtils.getInstallerResId(editingApp.installerPackageName)
+                    val installerName = InstallerUtils.getInstallerName(context, editingApp.installerPackageName)
+                    val installerText = if (installerName != editingApp.installerPackageName && editingApp.installerPackageName.isNotEmpty()) {
+                        "${editingApp.installerPackageName} ($installerName)"
                     } else {
-                        editingApp.installerPackageName.ifEmpty { "无" }
+                        installerName
                     }
                     val onInstallerClick: (() -> Unit)? = if (storeResId != null) {
                         {
