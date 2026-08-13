@@ -10,6 +10,14 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -214,7 +222,65 @@ fun AppLogApp() {
         NavHost(
             navController = navController,
             startDestination = NavigationTab.APPS.name,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            enterTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = try { NavigationTab.valueOf(initialRoute ?: "").ordinal } catch (_: Exception) { -1 }
+                val targetIndex = try { NavigationTab.valueOf(targetRoute ?: "").ordinal } catch (_: Exception) { -1 }
+
+                val isForward = if (initialIndex != -1 && targetIndex != -1) {
+                    targetIndex > initialIndex
+                } else {
+                    true // Default for deep navigation
+                }
+
+                slideInHorizontally(
+                    initialOffsetX = { if (isForward) it else -it },
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(400)) + scaleIn(
+                    initialScale = 0.92f,
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                )
+            },
+            exitTransition = {
+                val initialRoute = initialState.destination.route
+                val targetRoute = targetState.destination.route
+                val initialIndex = try { NavigationTab.valueOf(initialRoute ?: "").ordinal } catch (_: Exception) { -1 }
+                val targetIndex = try { NavigationTab.valueOf(targetRoute ?: "").ordinal } catch (_: Exception) { -1 }
+
+                val isForward = if (initialIndex != -1 && targetIndex != -1) {
+                    targetIndex > initialIndex
+                } else {
+                    true
+                }
+
+                slideOutHorizontally(
+                    targetOffsetX = { if (isForward) -it else it },
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(400)) + scaleOut(
+                    targetScale = 1.08f,
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                )
+            },
+            popEnterTransition = {
+                slideInHorizontally(
+                    initialOffsetX = { -it },
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                ) + fadeIn(animationSpec = tween(400)) + scaleIn(
+                    initialScale = 1.08f,
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                )
+            },
+            popExitTransition = {
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                ) + fadeOut(animationSpec = tween(400)) + scaleOut(
+                    targetScale = 0.92f,
+                    animationSpec = tween(400, easing = FastOutSlowInEasing)
+                )
+            }
         ) {
             composable(NavigationTab.APPS.name) {
                 AppsScreen(
