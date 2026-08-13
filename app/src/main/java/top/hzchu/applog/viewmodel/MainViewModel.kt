@@ -26,6 +26,7 @@ import top.hzchu.applog.model.DiffResult
 import top.hzchu.applog.receiver.PackageChangeReceiver
 import top.hzchu.applog.scanner.AppScanner
 import top.hzchu.applog.serializer.AppListSerializer
+import top.hzchu.applog.utils.PinyinUtils
 
 enum class AppSortOrder {
     NAME, PACKAGE_NAME, INSTALL_TIME, UPDATE_TIME
@@ -52,6 +53,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         private const val KEY_GIT_AUTHOR_EMAIL = "git_author_email"
         private const val KEY_SHOW_SYSTEM_APPS = "show_system_apps"
         private const val KEY_SHOW_USER_APPS = "show_user_apps"
+        private const val KEY_SHOW_INDEX_BAR = "show_index_bar"
         private const val KEY_FIRST_LAUNCH = "first_launch"
         private const val KEY_IGNORE_SSL = "ignore_ssl_errors"
     }
@@ -76,6 +78,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     )
     val showUserApps = _showUserApps.asStateFlow()
 
+    private val _showIndexBar = MutableStateFlow(
+        application.getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .getBoolean(KEY_SHOW_INDEX_BAR, false)
+    )
+    val showIndexBar = _showIndexBar.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
@@ -97,7 +105,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             matchesFilter && matchesSearch
         }.let { filtered ->
             when (sort) {
-                AppSortOrder.NAME -> filtered.sortedBy { it.appName.lowercase() }
+                AppSortOrder.NAME -> filtered.sortedBy { PinyinUtils.getPinyin(it.appName) }
                 AppSortOrder.PACKAGE_NAME -> filtered.sortedBy { it.packageName.lowercase() }
                 AppSortOrder.INSTALL_TIME -> filtered.sortedByDescending { it.firstInstallTime }
                 AppSortOrder.UPDATE_TIME -> filtered.sortedByDescending { it.lastUpdateTime }
@@ -903,6 +911,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<Application>()
             .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
             .edit().putBoolean(KEY_SHOW_USER_APPS, show).apply()
+    }
+
+    fun toggleIndexBar(show: Boolean) {
+        _showIndexBar.value = show
+        getApplication<Application>()
+            .getSharedPreferences(PREFS_SETTINGS, Context.MODE_PRIVATE)
+            .edit().putBoolean(KEY_SHOW_INDEX_BAR, show).apply()
     }
 
     fun setSearchQuery(query: String) {

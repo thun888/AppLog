@@ -10,6 +10,7 @@
     <string name="create">创建</string>
     <string name="general_settings">通用设置</string>
     <string name="auto_scan_on_start">启动时自动扫描应用</string>
+    <string name="show_index_bar">显示拼音索引条</string>
     <string name="tab_settings">设置</string>
     <string name="branch_management">分支管理</string>
     <string name="create_branch">新建分支</string>

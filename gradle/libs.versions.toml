@@ -14,6 +14,7 @@ slf4j = "1.7.36"
 lifecycleViewmodelCompose = "2.8.7"
 coil = "2.7.0"
 androidx-security-crypto = "1.1.0"
+tinypinyin = "2.0.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "androidx-security-crypto" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+tinypinyin = { group = "com.github.promeg", name = "tinypinyin", version.ref = "tinypinyin" }
 
 # JGit
 jgit-core = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version.ref = "jgit" }

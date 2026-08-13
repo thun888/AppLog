@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.security.crypto)
     implementation(libs.coil.compose)
+    implementation(libs.tinypinyin)
 
     // JGit
     implementation(libs.jgit.core)

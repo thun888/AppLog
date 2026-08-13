@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -35,20 +36,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.launch
 import top.hzchu.applog.R
 import top.hzchu.applog.model.AppInfo
+import top.hzchu.applog.ui.components.AlphabetIndexBar
 import top.hzchu.applog.ui.components.DiffAddedColor
 import top.hzchu.applog.ui.components.DiffItemAdded
 import top.hzchu.applog.ui.components.DiffItemRemoved
 import top.hzchu.applog.ui.components.DiffItemUpdated
 import top.hzchu.applog.ui.components.DiffRemovedColor
 import top.hzchu.applog.ui.components.DiffUpdatedColor
+import top.hzchu.applog.utils.PinyinUtils
 import top.hzchu.applog.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,12 +127,62 @@ private fun DetailContentView(
 ) {
     val showSystem by viewModel.showSystemApps.collectAsState()
     val showUser by viewModel.showUserApps.collectAsState()
+    val isIndexBarEnabled by viewModel.showIndexBar.collectAsState()
     var isExpanded by remember { mutableStateOf(false) }
+
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     fun AppInfo.shouldShow() = if (appType == AppInfo.AppType.SYSTEM) showSystem else showUser
 
     val addedPackages = diff.added.map { it.packageName }.toSet()
     val updatedPackages = diff.updated.map { it.second.packageName }.toSet()
+
+    val appsToShow = remember(allApps, addedPackages, updatedPackages, showSystem, showUser) {
+        allApps.filter {
+            it.packageName !in addedPackages && it.packageName !in updatedPackages
+        }.filter { it.shouldShow() }.sortedBy { PinyinUtils.getPinyin(it.appName) }
+    }
+
+    val showIndexBar = isIndexBarEnabled && isExpanded && appsToShow.isNotEmpty()
+
+    val alphabet = remember(appsToShow, showIndexBar) {
+        if (!showIndexBar) emptyList()
+        else appsToShow.map { app ->
+            PinyinUtils.getFirstLetter(app.appName).toString()
+        }.distinct().sortedBy { if (it == "#") "{" else it }
+    }
+
+    val indexMap = remember(appsToShow, showIndexBar) {
+        if (!showIndexBar) emptyMap()
+        else {
+            val map = mutableMapOf<String, Int>()
+            // We need to find the actual index in the LazyColumn.
+            // Items before the expanded list:
+            // 1 Summary
+            // if (added) 1 header + N items
+            // if (updated) 1 divider + 1 header + N items
+            // if (removed) 1 divider + 1 header + N items
+            // if (noteChanged) 1 divider + 1 header + N items
+            // if (tagsChanged) 1 divider + 1 header + N items
+            // 1 divider + 1 unchanged toggle
+            var baseIndex = 1
+            if (diff.added.isNotEmpty()) baseIndex += 1 + diff.added.size
+            if (diff.updated.isNotEmpty()) baseIndex += 2 + diff.updated.size
+            if (diff.removed.isNotEmpty()) baseIndex += 2 + diff.removed.size
+            if (diff.noteChanged.isNotEmpty()) baseIndex += 2 + diff.noteChanged.size
+            if (diff.tagsChanged.isNotEmpty()) baseIndex += 2 + diff.tagsChanged.size
+            baseIndex += 2 // divider and toggle
+
+            appsToShow.forEachIndexed { index, app ->
+                val char = PinyinUtils.getFirstLetter(app.appName).toString()
+                if (!map.containsKey(char)) {
+                    map[char] = baseIndex + index
+                }
+            }
+            map
+        }
+    }
 
     val summary = buildList {
         if (diff.added.isNotEmpty()) add(stringResource(R.string.diff_summary_added, diff.added.size))
@@ -137,18 +192,26 @@ private fun DetailContentView(
         if (diff.tagsChanged.isNotEmpty()) add(stringResource(R.string.diff_summary_tags, diff.tagsChanged.size))
     }.joinToString(", ").ifEmpty { stringResource(R.string.no_changes) }
 
-    LazyColumn(
-        contentPadding = PaddingValues(12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        item {
-            Text(
-                text = summary,
-                modifier = Modifier.fillMaxWidth().padding(4.dp),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            state = listState,
+            contentPadding = PaddingValues(
+                start = if (showIndexBar) 36.dp else 12.dp,
+                top = 12.dp,
+                end = 12.dp,
+                bottom = 12.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            item {
+                Text(
+                    text = summary,
+                    modifier = Modifier.fillMaxWidth().padding(4.dp),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
         // 1. Added
         if (diff.added.isNotEmpty()) {
@@ -291,14 +354,28 @@ private fun DetailContentView(
         }
 
         if (isExpanded) {
-            val appsToShow = allApps.filter { 
-                it.packageName !in addedPackages && it.packageName !in updatedPackages 
-            }.filter { it.shouldShow() }
-            
             items(appsToShow, key = { it.packageName }) { app ->
                 top.hzchu.applog.ui.components.AppItem(app = app, onClick = { onAppClick(app, null) })
             }
         }
     }
+
+    if (showIndexBar && alphabet.isNotEmpty()) {
+        AlphabetIndexBar(
+            alphabet = alphabet,
+            onIndexSelected = { char ->
+                indexMap[char]?.let { index ->
+                    coroutineScope.launch {
+                        listState.scrollToItem(index)
+                    }
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp)
+                .width(24.dp)
+        )
+    }
+}
 }
 

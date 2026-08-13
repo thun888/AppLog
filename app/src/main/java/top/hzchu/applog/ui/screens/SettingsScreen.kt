@@ -77,6 +77,7 @@ fun SettingsScreen(
     var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold()) }
     val debounceCount = viewModel.getDebounceCount()
     var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
+    var showIndexBar by remember { mutableStateOf(viewModel.showIndexBar.value) }
     var pendingForceAction by remember { mutableStateOf<String?>(null) } // "push" or "pull"
 
     Scaffold(
@@ -116,6 +117,21 @@ fun SettingsScreen(
                     onCheckedChange = {
                         autoScan = it
                         viewModel.setAutoScanOnStart(it)
+                    }
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(stringResource(R.string.show_index_bar))
+                Switch(
+                    checked = showIndexBar,
+                    onCheckedChange = {
+                        showIndexBar = it
+                        viewModel.toggleIndexBar(it)
                     }
                 )
             }
