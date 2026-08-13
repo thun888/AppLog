@@ -102,7 +102,7 @@ class PackageChangeReceiver : BroadcastReceiver() {
         val notification = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_sync)
             .setContentTitle(context.getString(R.string.notif_title_list_changed))
-            .setContentText(context.getString(R.string.notif_text_changes_detected, count))
+            .setContentText(context.resources.getQuantityString(R.plurals.notif_text_changes_detected, count, count))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
             .setContentIntent(openPendingIntent)

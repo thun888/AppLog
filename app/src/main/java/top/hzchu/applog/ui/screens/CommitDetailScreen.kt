@@ -43,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.ui.utils.pluralStringResource
 import kotlinx.coroutines.launch
 import top.hzchu.applog.R
 import top.hzchu.applog.model.AppInfo
@@ -185,11 +186,11 @@ private fun DetailContentView(
     }
 
     val summary = buildList {
-        if (diff.added.isNotEmpty()) add(stringResource(R.string.diff_summary_added, diff.added.size))
-        if (diff.removed.isNotEmpty()) add(stringResource(R.string.diff_summary_removed, diff.removed.size))
-        if (diff.updated.isNotEmpty()) add(stringResource(R.string.diff_summary_updated, diff.updated.size))
-        if (diff.noteChanged.isNotEmpty()) add(stringResource(R.string.diff_summary_notes, diff.noteChanged.size))
-        if (diff.tagsChanged.isNotEmpty()) add(stringResource(R.string.diff_summary_tags, diff.tagsChanged.size))
+        if (diff.added.isNotEmpty()) add(pluralStringResource(R.plurals.diff_summary_added, diff.added.size, diff.added.size))
+        if (diff.removed.isNotEmpty()) add(pluralStringResource(R.plurals.diff_summary_removed, diff.removed.size, diff.removed.size))
+        if (diff.updated.isNotEmpty()) add(pluralStringResource(R.plurals.diff_summary_updated, diff.updated.size, diff.updated.size))
+        if (diff.noteChanged.isNotEmpty()) add(pluralStringResource(R.plurals.diff_summary_notes, diff.noteChanged.size, diff.noteChanged.size))
+        if (diff.tagsChanged.isNotEmpty()) add(pluralStringResource(R.plurals.diff_summary_tags, diff.tagsChanged.size, diff.tagsChanged.size))
     }.joinToString(", ").ifEmpty { stringResource(R.string.no_changes) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -217,7 +218,7 @@ private fun DetailContentView(
         if (diff.added.isNotEmpty()) {
             item {
                 Text(
-                    text = stringResource(R.string.diff_added, diff.added.size),
+                    text = pluralStringResource(R.plurals.diff_added, diff.added.size, diff.added.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffAddedColor,
                     fontWeight = FontWeight.Bold
@@ -233,7 +234,7 @@ private fun DetailContentView(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_updated, diff.updated.size),
+                    text = pluralStringResource(R.plurals.diff_updated, diff.updated.size, diff.updated.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffUpdatedColor,
                     fontWeight = FontWeight.Bold
@@ -249,7 +250,7 @@ private fun DetailContentView(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_removed, diff.removed.size),
+                    text = pluralStringResource(R.plurals.diff_removed, diff.removed.size, diff.removed.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = DiffRemovedColor,
                     fontWeight = FontWeight.Bold
@@ -284,7 +285,7 @@ private fun DetailContentView(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_notes, diff.noteChanged.size),
+                    text = pluralStringResource(R.plurals.diff_notes, diff.noteChanged.size, diff.noteChanged.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.secondary,
                     fontWeight = FontWeight.Bold
@@ -304,7 +305,7 @@ private fun DetailContentView(
             item {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = stringResource(R.string.diff_tags, diff.tagsChanged.size),
+                    text = pluralStringResource(R.plurals.diff_tags, diff.tagsChanged.size, diff.tagsChanged.size),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                     color = MaterialTheme.colorScheme.tertiary,
                     fontWeight = FontWeight.Bold
@@ -336,7 +337,7 @@ private fun DetailContentView(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = stringResource(R.string.apps_count, unchangedCount),
+                        text = pluralStringResource(R.plurals.apps_count, unchangedCount, unchangedCount),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold

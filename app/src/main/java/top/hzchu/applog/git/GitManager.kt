@@ -239,7 +239,7 @@ class GitManager(private val context: Context) {
         }
     }
 
-    private suspend fun setupRemote(git: Git, remoteUrl: String): String {
+    private fun setupRemote(git: Git, remoteUrl: String): String {
         val remoteList = git.remoteList().call()
         if (remoteList.any { it.name == REMOTE_NAME }) {
             git.remoteSetUrl()

@@ -44,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,7 +75,7 @@ fun SettingsScreen(
     var authorName by remember { mutableStateOf(gitAuthor) }
     var authorEmail by remember { mutableStateOf(gitEmail) }
     var ignoreSsl by remember { mutableStateOf(viewModel.isIgnoreSslErrors()) }
-    var threshold by remember { mutableStateOf(viewModel.getDebounceThreshold()) }
+    var threshold by remember { mutableIntStateOf(viewModel.getDebounceThreshold()) }
     val debounceCount = viewModel.getDebounceCount()
     var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
     var showIndexBar by remember { mutableStateOf(viewModel.showIndexBar.value) }

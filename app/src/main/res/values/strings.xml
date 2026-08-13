@@ -28,20 +28,38 @@
     <string name="commit">Commit</string>
     <string name="no_apps">No apps scanned</string>
     <string name="tap_to_scan">Tap refresh to scan</string>
-    <string name="apps_count">%d apps</string>
+    <plurals name="apps_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
     <string name="version_format">v%1$s (%2$d)</string>
     <string name="version_was">was v%1$s (%2$d)</string>
     <string name="no_commits">No commits yet</string>
-    <string name="unpushed_count">%d unpushed</string>
+    <plurals name="unpushed_count">
+        <item quantity="one">%d unpushed</item>
+        <item quantity="other">%d unpushed</item>
+    </plurals>
     <string name="scan_to_start">Scan and commit to get started</string>
     <string name="select_commits_hint">Select 2 commits for diff comparison</string>
     <string name="no_diff">No diff to show</string>
     <string name="select_in_history">Select commits in History tab</string>
     <string name="compute_diff">Compute Diff</string>
-    <string name="diff_added">Added (%d)</string>
-    <string name="diff_removed">Removed (%d)</string>
-    <string name="diff_updated">Updated (%d)</string>
-    <string name="diff_notes">Notes Changed (%d)</string>
+    <plurals name="diff_added">
+        <item quantity="one">Added (%d)</item>
+        <item quantity="other">Added (%d)</item>
+    </plurals>
+    <plurals name="diff_removed">
+        <item quantity="one">Removed (%d)</item>
+        <item quantity="other">Removed (%d)</item>
+    </plurals>
+    <plurals name="diff_updated">
+        <item quantity="one">Updated (%d)</item>
+        <item quantity="other">Updated (%d)</item>
+    </plurals>
+    <plurals name="diff_notes">
+        <item quantity="one">Note Changed (%d)</item>
+        <item quantity="other">Notes Changed (%d)</item>
+    </plurals>
     <string name="note_added">Added: %s</string>
     <string name="note_removed_diff">Removed: %s</string>
     <string name="copy_adb_script">Copy ADB Script</string>
@@ -88,7 +106,10 @@
     <string name="notification_channel_name">App Change Alert</string>
     <string name="notification_channel_desc">App install/uninstall/update alerts</string>
     <string name="notif_title_list_changed">App list changed</string>
-    <string name="notif_text_changes_detected">Detected %d changes, consider committing a new snapshot</string>
+    <plurals name="notif_text_changes_detected">
+        <item quantity="one">Detected %d change, consider committing a new snapshot</item>
+        <item quantity="other">Detected %d changes, consider committing a new snapshot</item>
+    </plurals>
     <string name="remind_later">Remind later</string>
 
     <string name="setup_title">Welcome to AppLog</string>
@@ -139,12 +160,30 @@
     <string name="uninstall_app">Uninstall</string>
     <string name="extract_success">APK extracted to Downloads</string>
     <string name="extract_failed">Extraction failed: %s</string>
-    <string name="diff_summary_added">add %d apps</string>
-    <string name="diff_summary_removed">delete %d apps</string>
-    <string name="diff_summary_updated">%d updated</string>
-    <string name="diff_summary_notes">%d notes</string>
-    <string name="diff_summary_tags">%d tags</string>
-    <string name="diff_tags">Tags Changed (%d)</string>
+    <plurals name="diff_summary_added">
+        <item quantity="one">add %d app</item>
+        <item quantity="other">add %d apps</item>
+    </plurals>
+    <plurals name="diff_summary_removed">
+        <item quantity="one">delete %d app</item>
+        <item quantity="other">delete %d apps</item>
+    </plurals>
+    <plurals name="diff_summary_updated">
+        <item quantity="one">%d updated</item>
+        <item quantity="other">%d updated</item>
+    </plurals>
+    <plurals name="diff_summary_notes">
+        <item quantity="one">%d note</item>
+        <item quantity="other">%d notes</item>
+    </plurals>
+    <plurals name="diff_summary_tags">
+        <item quantity="one">%d tag</item>
+        <item quantity="other">%d tags</item>
+    </plurals>
+    <plurals name="diff_tags">
+        <item quantity="one">Tag Changed (%d)</item>
+        <item quantity="other">Tags Changed (%d)</item>
+    </plurals>
     <string name="app_info_tags">Tags</string>
     <string name="tags_added">Added tags: %s</string>
     <string name="tags_removed_diff">Removed tags: %s</string>

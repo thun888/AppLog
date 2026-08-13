@@ -55,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.ui.utils.pluralStringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -340,7 +341,7 @@ fun AppsScreen(
                     ) {
                         item {
                             Text(
-                                text = stringResource(R.string.apps_count, apps.size),
+                                text = pluralStringResource(R.plurals.apps_count, apps.size, apps.size),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 4.dp, vertical = 4.dp),
@@ -403,6 +404,7 @@ fun AppsScreen(
                                             expanded = menuApp == app,
                                             onDismissRequest = { menuApp = null }
                                         ) {
+                                            val notOpenableMessage = stringResource(R.string.app_not_openable)
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(R.string.open_app)) },
                                                 onClick = {
@@ -411,7 +413,7 @@ fun AppsScreen(
                                                     if (launchIntent != null) {
                                                         context.startActivity(launchIntent)
                                                     } else {
-                                                        viewModel.showToast(context.getString(R.string.app_not_openable))
+                                                        viewModel.showToast(notOpenableMessage)
                                                     }
                                                 }
                                             )

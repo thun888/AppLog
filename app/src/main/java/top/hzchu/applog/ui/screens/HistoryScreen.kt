@@ -42,6 +42,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import top.hzchu.applog.ui.utils.pluralStringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -70,7 +71,7 @@ fun HistoryScreen(
 
     val listState = rememberLazyListState()
 
-    // Auto-load more when scrolling near the bottom
+    // Autoload more when scrolling near the bottom
     LaunchedEffect(listState, commits.size, canLoadMore, isLoading) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .filter { it != null && it >= commits.size - 2 }
@@ -98,7 +99,7 @@ fun HistoryScreen(
                             if (unpushedCount > 0) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = stringResource(R.string.unpushed_count, unpushedCount),
+                                    text = pluralStringResource(R.plurals.unpushed_count, unpushedCount, unpushedCount),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.error
                                 )

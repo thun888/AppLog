@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -56,7 +55,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -78,6 +76,7 @@ import top.hzchu.applog.viewmodel.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.core.net.toUri
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -379,8 +378,6 @@ fun AppDialogs(
 
     // Note editing dialog
     if (editingApp != null) {
-        val app = editingApp
-        val prev = previousAppForDiff
         val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
         val storeMap = mapOf(
             "com.xiaomi.market" to R.string.store_xiaomi,
@@ -401,7 +398,7 @@ fun AppDialogs(
         )
         AlertDialog(
             onDismissRequest = onDismissEditingApp,
-            title = { Text(app.appName) },
+            title = { Text(editingApp.appName) },
             text = {
                 Column(
                     modifier = Modifier
@@ -410,45 +407,49 @@ fun AppDialogs(
                 ) {
                     AppDetailRow(
                         label = stringResource(R.string.app_info_package),
-                        value = app.packageName,
-                        isChanged = prev != null && prev.packageName != app.packageName
+                        value = editingApp.packageName,
+                        isChanged = previousAppForDiff != null && previousAppForDiff.packageName != editingApp.packageName
                     )
                     AppDetailRow(
                         label = stringResource(R.string.app_info_version),
-                        value = stringResource(R.string.version_format, app.versionName, app.versionCode),
-                        isChanged = prev != null && (prev.versionCode != app.versionCode || prev.versionName != app.versionName)
+                        value = stringResource(R.string.version_format,
+                            editingApp.versionName, editingApp.versionCode),
+                        isChanged = previousAppForDiff != null && (previousAppForDiff.versionCode != editingApp.versionCode || previousAppForDiff.versionName != editingApp.versionName)
                     )
                     AppDetailRow(
                         label = stringResource(R.string.app_info_install_time),
-                        value = sdf.format(Date(app.firstInstallTime)),
-                        isChanged = prev != null && prev.firstInstallTime != app.firstInstallTime
+                        value = sdf.format(Date(editingApp.firstInstallTime)),
+                        isChanged = previousAppForDiff != null && previousAppForDiff.firstInstallTime != editingApp.firstInstallTime
                     )
                     AppDetailRow(
                         label = stringResource(R.string.app_info_update_time),
-                        value = sdf.format(Date(app.lastUpdateTime)),
-                        isChanged = prev != null && prev.lastUpdateTime != app.lastUpdateTime
+                        value = sdf.format(Date(editingApp.lastUpdateTime)),
+                        isChanged = previousAppForDiff != null && previousAppForDiff.lastUpdateTime != editingApp.lastUpdateTime
                     )
                     
-                    val storeResId = storeMap[app.installerPackageName]
+                    val storeResId = storeMap[editingApp.installerPackageName]
                     val installerText = if (storeResId != null) {
-                        "${app.installerPackageName} (${stringResource(storeResId)})"
+                        "${editingApp.installerPackageName} (${stringResource(storeResId)})"
                     } else {
-                        app.installerPackageName.ifEmpty { "无" }
+                        editingApp.installerPackageName.ifEmpty { "无" }
                     }
                     val onInstallerClick: (() -> Unit)? = if (storeResId != null) {
                         {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
-                                intent.setPackage(app.installerPackageName)
+                                val intent = Intent(Intent.ACTION_VIEW,
+                                    "market://details?id=${editingApp.packageName}".toUri())
+                                intent.setPackage(editingApp.installerPackageName)
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                if (app.installerPackageName == "com.android.vending") {
-                                    val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${app.packageName}"))
+                                if (editingApp.installerPackageName == "com.android.vending") {
+                                    val webIntent = Intent(Intent.ACTION_VIEW,
+                                        "https://play.google.com/store/apps/details?id=${editingApp.packageName}".toUri())
                                     context.startActivity(webIntent)
                                 } else {
                                     // Fallback to general market intent if specific store fails
                                     try {
-                                        val genericIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${app.packageName}"))
+                                        val genericIntent = Intent(Intent.ACTION_VIEW,
+                                            "market://details?id=${editingApp.packageName}".toUri())
                                         context.startActivity(genericIntent)
                                     } catch (_: Exception) {}
                                 }
@@ -459,13 +460,13 @@ fun AppDialogs(
                     AppDetailRow(
                         label = stringResource(R.string.app_info_installer),
                         value = installerText,
-                        isChanged = prev != null && prev.installerPackageName != app.installerPackageName,
+                        isChanged = previousAppForDiff != null && previousAppForDiff.installerPackageName != editingApp.installerPackageName,
                         onClick = onInstallerClick
                     )
                     AppDetailRow(
                         label = stringResource(R.string.app_info_signature),
-                        value = app.signatureSha256.ifEmpty { "无" },
-                        isChanged = prev != null && prev.signatureSha256 != app.signatureSha256
+                        value = editingApp.signatureSha256.ifEmpty { "无" },
+                        isChanged = previousAppForDiff != null && previousAppForDiff.signatureSha256 != editingApp.signatureSha256
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -489,14 +490,14 @@ fun AppDialogs(
                     } else {
                         AppDetailRow(
                             label = stringResource(R.string.app_info_note),
-                            value = app.note.ifEmpty { "无" },
-                            isChanged = prev != null && prev.note != app.note
+                            value = editingApp.note.ifEmpty { "无" },
+                            isChanged = previousAppForDiff != null && previousAppForDiff.note != editingApp.note
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = stringResource(R.string.app_info_tags),
                             style = MaterialTheme.typography.labelMedium,
-                            color = if (prev != null && prev.tags != app.tags) DiffUpdatedColor else MaterialTheme.colorScheme.primary
+                            color = if (previousAppForDiff != null && previousAppForDiff.tags != editingApp.tags) DiffUpdatedColor else MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         TagChipDisplay(tags = editingTagsList)
@@ -507,7 +508,7 @@ fun AppDialogs(
                 if (isDetailEditable) {
                     TextButton(
                         onClick = {
-                            viewModel.updateAppMetadata(app.packageName, editingNoteText, editingTagsList.joinToString(", "))
+                            viewModel.updateAppMetadata(editingApp.packageName, editingNoteText, editingTagsList.joinToString(", "))
                             onDismissEditingApp()
                         }
                     ) {
