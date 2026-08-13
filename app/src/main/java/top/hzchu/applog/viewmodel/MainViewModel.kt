@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -83,7 +85,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _grouping = MutableStateFlow(AppGrouping.NONE)
     val grouping = _grouping.asStateFlow()
 
-    val filteredApps = combine(
+    val filteredApps: StateFlow<List<AppInfo>> = combine(
         _apps, _showSystemApps, _showUserApps, _searchQuery, _sortOrder
     ) { apps, showSystem, showUser, query, sort ->
         apps.filter { app ->
@@ -101,9 +103,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 AppSortOrder.UPDATE_TIME -> filtered.sortedByDescending { it.lastUpdateTime }
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val groupedApps = combine(filteredApps, _grouping) { apps, grouping ->
+    val groupedApps: StateFlow<Map<String, List<AppInfo>>> = combine(filteredApps, _grouping) { apps, grouping ->
         when (grouping) {
             AppGrouping.NONE -> mapOf("" to apps)
             AppGrouping.TAGS -> {
@@ -123,7 +125,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     private val _isScanning = MutableStateFlow(false)
     val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
@@ -360,12 +362,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     scanAndUpdateApps()
                 }
 
-                var counts = computeDiffCounts()
+                val counts = withContext(Dispatchers.Default) {
+                    var c = computeDiffCounts()
 
-                // 无变更但数据可能已过时 → 刷新后重试一次
-                if (!counts.hasChanges && _apps.value.isNotEmpty()) {
-                    scanAndUpdateApps()
-                    counts = computeDiffCounts()
+                    // 无变更但数据可能已过时 → 刷新后重试一次
+                    if (!c.hasChanges && _apps.value.isNotEmpty()) {
+                        scanAndUpdateApps()
+                        c = computeDiffCounts()
+                    }
+                    c
                 }
 
                 if (!counts.hasChanges) {
@@ -410,7 +415,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             try {
-                val currentContent = AppListSerializer.serialize(_apps.value)
+                val currentContent = withContext(Dispatchers.Default) {
+                    AppListSerializer.serialize(_apps.value)
+                }
                 val (authorName, authorEmail) = getGitIdentity()
                 val result = gitManager.commitSnapshot(
                     content = currentContent,
@@ -533,51 +540,53 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isComputingDiff.value = true
             try {
-                if (commitId == "CURRENT") {
-                    // Reuse cached apps if available, otherwise scan
-                    val currentApps = if (_apps.value.isNotEmpty()) {
-                        _apps.value
-                    } else {
-                        val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
-                        val notes = _notesMap.value
-                        val tags = _tagsMap.value
-                        scanned.map { app -> app.copy(note = notes[app.packageName] ?: "", tags = tags[app.packageName] ?: "") }.also {
-                            _apps.value = it
+                withContext(Dispatchers.Default) {
+                    if (commitId == "CURRENT") {
+                        // Reuse cached apps if available, otherwise scan
+                        val currentApps = if (_apps.value.isNotEmpty()) {
+                            _apps.value
+                        } else {
+                            val scanned = withContext(Dispatchers.IO) { appScanner.scanAllApps() }
+                            val notes = _notesMap.value
+                            val tags = _tagsMap.value
+                            scanned.map { app -> app.copy(note = notes[app.packageName] ?: "", tags = tags[app.packageName] ?: "") }.also {
+                                _apps.value = it
+                            }
                         }
-                    }
 
-                    val headContent = gitManager.getSnapshotContent().getOrThrow()
-                    val headApps = AppListSerializer.deserialize(headContent)
-                    val diff = computeDiff(currentApps, headApps)
+                        val headContent = gitManager.getSnapshotContent().getOrThrow()
+                        val headApps = AppListSerializer.deserialize(headContent)
+                        val diff = computeDiff(currentApps, headApps)
 
-                    _currentDetailCommit.value = CommitInfo(
-                        id = "CURRENT",
-                        shortId = "CURRENT",
-                        message = getApplication<Application>().getString(R.string.current_status),
-                        author = "",
-                        timestamp = System.currentTimeMillis()
-                    )
-                    _detailApps.value = currentApps
-                    _detailDiffResult.value = diff
-                } else {
-                    val commit = _commits.value.find { it.id == commitId } ?: return@launch
-                    val parentId = gitManager.getParentCommitId(commitId)
-                    
-                    val currentContent = gitManager.getSnapshotContent(commitId).getOrThrow()
-                    val currentApps = AppListSerializer.deserialize(currentContent)
-                    
-                    val parentApps = if (parentId != null) {
-                        val parentContent = gitManager.getSnapshotContent(parentId).getOrThrow()
-                        AppListSerializer.deserialize(parentContent)
+                        _currentDetailCommit.value = CommitInfo(
+                            id = "CURRENT",
+                            shortId = "CURRENT",
+                            message = getApplication<Application>().getString(R.string.current_status),
+                            author = "",
+                            timestamp = System.currentTimeMillis()
+                        )
+                        _detailApps.value = currentApps
+                        _detailDiffResult.value = diff
                     } else {
-                        emptyList()
+                        val commit = _commits.value.find { it.id == commitId } ?: return@withContext
+                        val parentId = gitManager.getParentCommitId(commitId)
+                        
+                        val currentContent = gitManager.getSnapshotContent(commitId).getOrThrow()
+                        val currentApps = AppListSerializer.deserialize(currentContent)
+                        
+                        val parentApps = if (parentId != null) {
+                            val parentContent = gitManager.getSnapshotContent(parentId).getOrThrow()
+                            AppListSerializer.deserialize(parentContent)
+                        } else {
+                            emptyList()
+                        }
+
+                        val diff = computeDiff(currentApps, parentApps)
+
+                        _currentDetailCommit.value = commit
+                        _detailApps.value = currentApps
+                        _detailDiffResult.value = diff
                     }
-
-                    val diff = computeDiff(currentApps, parentApps)
-
-                    _currentDetailCommit.value = commit
-                    _detailApps.value = currentApps
-                    _detailDiffResult.value = diff
                 }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.diff_failed, e.message)
@@ -633,14 +642,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * 从 Git 工作目录的 apps_snapshot.txt 加载备注和标签
      */
-    private fun loadMetadataFromWorkingFile() {
+    private suspend fun loadMetadataFromWorkingFile() = withContext(Dispatchers.IO) {
         try {
             val file = java.io.File(
                 getApplication<Application>().filesDir,
                 GitManager.REPO_DIR + "/" + GitManager.SNAPSHOT_FILE
             )
-            if (!file.exists()) return
-            val apps = AppListSerializer.deserialize(file.readText())
+            if (!file.exists()) return@withContext
+            val content = file.readText()
+            val apps = AppListSerializer.deserialize(content)
             _notesMap.value = apps
                 .filter { it.note.isNotEmpty() }
                 .associate { it.packageName to it.note }
@@ -656,7 +666,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * 将内存中的备注和标签写回工作文件
      * 仅更新 note 和 tags 字段，保留文件中其他应用字段不变
      */
-    private fun syncMetadataToWorkingFile() {
+    private suspend fun syncMetadataToWorkingFile() = withContext(Dispatchers.IO) {
         try {
             val file = java.io.File(
                 getApplication<Application>().filesDir,
@@ -696,7 +706,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         else currentTags[packageName] = normalizedTags
         _tagsMap.value = currentTags
 
-        syncMetadataToWorkingFile()
+        viewModelScope.launch {
+            syncMetadataToWorkingFile()
+        }
 
         _apps.value = _apps.value.map { app ->
             if (app.packageName == packageName) app.copy(note = note, tags = normalizedTags) else app

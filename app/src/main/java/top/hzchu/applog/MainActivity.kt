@@ -149,7 +149,6 @@ fun AppLogApp() {
     val showCommitDialog by viewModel.showCommitDialog.collectAsState()
     val pendingAutoMessage by viewModel.pendingAutoMessage.collectAsState()
     val allTags by viewModel.allTags.collectAsState()
-    val context = androidx.compose.ui.platform.LocalContext.current
 
     var commitMessageText by remember { mutableStateOf("") }
     LaunchedEffect(showCommitDialog) {
@@ -209,12 +208,13 @@ fun AppLogApp() {
                     Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.commit))
                 }
             }
-        }
+        },
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         NavHost(
             navController = navController,
             startDestination = NavigationTab.APPS.name,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(NavigationTab.APPS.name) {
                 AppsScreen(
@@ -225,7 +225,8 @@ fun AppLogApp() {
                         isDetailEditable = true
                         editingNoteText = app.note
                         editingTagsList = app.tags.split(", ").filter { it.isNotEmpty() }
-                    }
+                    },
+                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
             composable(NavigationTab.HISTORY.name) {
@@ -234,14 +235,16 @@ fun AppLogApp() {
                     onCommitClick = { id ->
                         viewModel.loadCommitDetail(id)
                         navController.navigate("commit_detail/$id")
-                    }
+                    },
+                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
             composable(NavigationTab.SETTINGS.name) {
                 SettingsScreen(
                     viewModel = viewModel,
                     onNavigateToBranches = { navController.navigate("branches") },
-                    onNavigateToAbout = { navController.navigate("about") }
+                    onNavigateToAbout = { navController.navigate("about") },
+                    modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
                 )
             }
             composable("commit_detail/{commitId}") { backStackEntry ->
@@ -274,9 +277,47 @@ fun AppLogApp() {
         }
     }
 
+    AppDialogs(
+        viewModel = viewModel,
+        editingApp = editingApp,
+        onDismissEditingApp = { editingApp = null },
+        previousAppForDiff = previousAppForDiff,
+        isDetailEditable = isDetailEditable,
+        editingNoteText = editingNoteText,
+        onNoteTextChange = { editingNoteText = it },
+        editingTagsList = editingTagsList,
+        onTagsListChange = { editingTagsList = it },
+        showCommitDialog = showCommitDialog,
+        commitMessageText = commitMessageText,
+        onCommitMessageChange = { commitMessageText = it },
+        pendingAutoMessage = pendingAutoMessage,
+        allTags = allTags
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppDialogs(
+    viewModel: MainViewModel,
+    editingApp: AppInfo?,
+    onDismissEditingApp: () -> Unit,
+    previousAppForDiff: AppInfo?,
+    isDetailEditable: Boolean,
+    editingNoteText: String,
+    onNoteTextChange: (String) -> Unit,
+    editingTagsList: List<String>,
+    onTagsListChange: (List<String>) -> Unit,
+    showCommitDialog: Boolean,
+    commitMessageText: String,
+    onCommitMessageChange: (String) -> Unit,
+    pendingAutoMessage: String,
+    allTags: List<String>
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+
     // Note editing dialog
     if (editingApp != null) {
-        val app = editingApp!!
+        val app = editingApp
         val prev = previousAppForDiff
         val sdf = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
         val storeMap = mapOf(
@@ -297,7 +338,7 @@ fun AppLogApp() {
             "com.qihoo.appstore" to R.string.store_360
         )
         AlertDialog(
-            onDismissRequest = { editingApp = null },
+            onDismissRequest = onDismissEditingApp,
             title = { Text(app.appName) },
             text = {
                 Column(
@@ -372,14 +413,14 @@ fun AppLogApp() {
                     if (isDetailEditable) {
                         OutlinedTextField(
                             value = editingNoteText,
-                            onValueChange = { editingNoteText = it },
+                            onValueChange = onNoteTextChange,
                             label = { Text(stringResource(R.string.app_info_note)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         TagChipInput(
                             tags = editingTagsList,
-                            onTagsChanged = { editingTagsList = it },
+                            onTagsChanged = onTagsListChange,
                             allExistingTags = allTags,
                             label = stringResource(R.string.app_info_tags)
                         )
@@ -405,21 +446,21 @@ fun AppLogApp() {
                     TextButton(
                         onClick = {
                             viewModel.updateAppMetadata(app.packageName, editingNoteText, editingTagsList.joinToString(", "))
-                            editingApp = null
+                            onDismissEditingApp()
                         }
                     ) {
                         Text(stringResource(R.string.save))
                     }
                 } else {
-                    TextButton(onClick = { editingApp = null }) {
-                        Text(stringResource(R.string.save).let { "OK" }) // Or just OK
+                    TextButton(onClick = onDismissEditingApp) {
+                        Text("OK")
                     }
                 }
             },
             dismissButton = {
                 if (isDetailEditable) {
                     TextButton(
-                        onClick = { editingApp = null }
+                        onClick = onDismissEditingApp
                     ) {
                         Text(stringResource(R.string.cancel))
                     }
@@ -442,7 +483,7 @@ fun AppLogApp() {
                     )
                     OutlinedTextField(
                         value = commitMessageText,
-                        onValueChange = { commitMessageText = it },
+                        onValueChange = onCommitMessageChange,
                         placeholder = { Text(pendingAutoMessage) },
                         modifier = Modifier.fillMaxWidth(),
                         maxLines = 3
