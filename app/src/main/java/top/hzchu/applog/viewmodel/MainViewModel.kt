@@ -628,7 +628,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _toastMessage.value = getApplication<Application>().getString(R.string.creating_tag)
             gitManager.createTag(commitId, tagName, message).onSuccess {
-                // Try to sync immediately if remote is configured
+                // 乐观更新列表状态
+                _commits.value = _commits.value.map { commit ->
+                    if (commit.id == commitId) {
+                        commit.copy(tags = (commit.tags + tagName).distinct().sorted())
+                    } else commit
+                }
+
+                // 尝试同步到远程
                 val (url, user, pass) = getRemoteConfig()
                 if (url.isNotBlank()) {
                     val ignoreSsl = isIgnoreSslErrors()
@@ -660,6 +667,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             val tagInfo = tagInfoResult.getOrNull()
 
             gitManager.deleteTag(tagName).onSuccess {
+                // 乐观更新列表状态
+                _commits.value = _commits.value.map { commit ->
+                    if (tagName in commit.tags) {
+                        commit.copy(tags = commit.tags.filter { it != tagName })
+                    } else commit
+                }
+
                 val (url, user, pass) = getRemoteConfig()
                 if (url.isNotBlank()) {
                     val ignoreSsl = isIgnoreSslErrors()

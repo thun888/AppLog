@@ -195,20 +195,20 @@ fun HistoryScreen(
                         }
                     }
                 } else {
-                items(commits, key = { it.id }) { commit ->
-                    val isTagging = taggingCommit?.id == commit.id
-                    CommitItem(
-                        commit = if (isTagging) taggingCommit!! else commit,
-                        isSelected = false,
-                        onClick = { onCommitClick(commit.id) },
-                        onLongClick = {
-                            taggingCommit = commit
-                            tagName = ""
-                            tagMessage = ""
-                            showTagDialog = true
-                        }
-                    )
-                }
+                    items(commits, key = { it.id }) { commit ->
+                        val isTagging = showTagDialog && taggingCommit?.id == commit.id
+                        CommitItem(
+                            commit = if (isTagging) taggingCommit!! else commit,
+                            isSelected = false,
+                            onClick = { onCommitClick(commit.id) },
+                            onLongClick = {
+                                taggingCommit = commit
+                                tagName = ""
+                                tagMessage = ""
+                                showTagDialog = true
+                            }
+                        )
+                    }
 
                     if (isLoading) {
                         item {
@@ -242,7 +242,10 @@ fun HistoryScreen(
 
     if (showTagDialog && taggingCommit != null) {
         AlertDialog(
-            onDismissRequest = { showTagDialog = false },
+            onDismissRequest = { 
+                showTagDialog = false
+                taggingCommit = null
+            },
             title = { Text(stringResource(R.string.manage_tags)) },
             text = {
                 Column {
@@ -316,6 +319,7 @@ fun HistoryScreen(
                         if (tagName.isNotBlank()) {
                             viewModel.createTag(taggingCommit!!.id, tagName, tagMessage)
                             showTagDialog = false
+                            taggingCommit = null
                         }
                     },
                     enabled = tagName.isNotBlank()
@@ -324,7 +328,10 @@ fun HistoryScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showTagDialog = false }) {
+                TextButton(onClick = { 
+                    showTagDialog = false
+                    taggingCommit = null
+                }) {
                     Text(stringResource(R.string.cancel))
                 }
             }
