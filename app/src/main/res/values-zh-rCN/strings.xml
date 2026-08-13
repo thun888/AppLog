@@ -115,6 +115,8 @@
     <string name="committed">已提交: %s</string>
     <string name="load_more">加载更多</string>
     <string name="no_changes">无更改</string>
+    <string name="creating_tag">正在后台创建标签...</string>
+    <string name="deleting_tag">正在后台删除标签...</string>
     <string name="commit_failed">提交失败: %s</string>
     <string name="error_prefix">错误: %s</string>
     <string name="select_first_commit">请选择第一个提交</string>
@@ -122,8 +124,12 @@
     <string name="diff_failed">对比失败: %s</string>
     <string name="select_historical_commit">请选择一个历史提交</string>
     <string name="tag_created">标签 \"%s\" 已创建</string>
+    <string name="tag_deleted">标签 \"%s\" 已删除</string>
     <string name="tag_failed">创建标签失败: %s</string>
     <string name="tag_sync_failed">标签已在本地创建但同步失败: %s。本地标签已移除。</string>
+    <string name="tag_delete_sync_failed">标签已在本地删除但无法同步到远程: %s</string>
+    <string name="manage_tags">管理标签</string>
+    <string name="existing_tags">已有标签</string>
     <string name="pushing">正在推送...</string>
     <string name="push_success">推送成功</string>
     <string name="push_error">推送错误: %s</string>
@@ -176,6 +182,7 @@
     <string name="tags_removed_diff">移除标签: %s</string>
     <string name="tags_placeholder">回车添加标签</string>
     <string name="remove_tag">移除 %s</string>
+    <string name="delete_tag_confirm">确定删除标签 \"%s\" 吗？</string>
 
     <string name="search_hint">搜索应用、包名、备注...</string>
     <string name="sort_by">排序方式</string>

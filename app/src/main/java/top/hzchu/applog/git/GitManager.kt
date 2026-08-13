@@ -23,6 +23,11 @@ data class CommitInfo(
     val tags: List<String> = emptyList()
 )
 
+data class TagInfo(
+    val commitId: String,
+    val message: String
+)
+
 class GitManager(private val context: Context) {
 
     companion object {
@@ -232,6 +237,67 @@ class GitManager(private val context: Context) {
         try {
             git?.use { g ->
                 g.tagDelete().setTags(tagName).call()
+                Result.success(Unit)
+            } ?: Result.failure(Exception("Repo not initialized"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getTagInfo(tagName: String): Result<TagInfo> = withContext(Dispatchers.IO) {
+        try {
+            git?.use { g ->
+                val repo = g.repository
+                val ref = repo.findRef("refs/tags/$tagName") ?: return@use Result.failure(Exception("Tag not found"))
+                val peeledRef = repo.refDatabase.peel(ref)
+                
+                val revWalk = RevWalk(repo)
+                val objectId = ref.objectId ?: return@use Result.failure(Exception("Invalid tag ref"))
+                val revObject = revWalk.parseAny(objectId)
+                
+                val commitId = if (revObject is org.eclipse.jgit.revwalk.RevTag) {
+                    revObject.`object`.name
+                } else {
+                    revObject.name
+                }
+                
+                val message = if (revObject is org.eclipse.jgit.revwalk.RevTag) {
+                    revObject.fullMessage
+                } else {
+                    ""
+                }
+                
+                revWalk.close()
+                Result.success(TagInfo(commitId, message))
+            } ?: Result.failure(Exception("Repo not initialized"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun pushDeleteRemoteTag(
+        tagName: String,
+        remoteUrl: String,
+        username: String,
+        password: String,
+        ignoreSsl: Boolean = false
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val trimmedUrl = remoteUrl.trim()
+            val trimmedUser = username.trim()
+            val trimmedPass = password.trim()
+
+            if (ignoreSsl) {
+                disableSslVerification()
+            }
+
+            git?.use { g ->
+                val remoteName = setupRemote(g, trimmedUrl)
+                g.push()
+                    .setRemote(remoteName)
+                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(trimmedUser, trimmedPass))
+                    .setRefSpecs(RefSpec(":refs/tags/$tagName"))
+                    .call()
                 Result.success(Unit)
             } ?: Result.failure(Exception("Repo not initialized"))
         } catch (e: Exception) {

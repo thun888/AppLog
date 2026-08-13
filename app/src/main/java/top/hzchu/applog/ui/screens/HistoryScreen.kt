@@ -1,8 +1,11 @@
 package top.hzchu.applog.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,11 +24,16 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.InputChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -68,9 +76,11 @@ fun HistoryScreen(
     val isPulling by viewModel.isPulling.collectAsState()
 
     var showTagDialog by remember { mutableStateOf(false) }
-    var taggingCommitId by remember { mutableStateOf("") }
+    var taggingCommit by remember { mutableStateOf<CommitInfo?>(null) }
     var tagName by remember { mutableStateOf("") }
     var tagMessage by remember { mutableStateOf("") }
+    var showDeleteTagConfirm by remember { mutableStateOf(false) }
+    var tagToDelete by remember { mutableStateOf("") }
 
     val listState = rememberLazyListState()
 
@@ -185,19 +195,20 @@ fun HistoryScreen(
                         }
                     }
                 } else {
-                    items(commits, key = { it.id }) { commit ->
-                        CommitItem(
-                            commit = commit,
-                            isSelected = false,
-                            onClick = { onCommitClick(commit.id) },
-                            onLongClick = {
-                                taggingCommitId = commit.id
-                                tagName = ""
-                                tagMessage = ""
-                                showTagDialog = true
-                            }
-                        )
-                    }
+                items(commits, key = { it.id }) { commit ->
+                    val isTagging = taggingCommit?.id == commit.id
+                    CommitItem(
+                        commit = if (isTagging) taggingCommit!! else commit,
+                        isSelected = false,
+                        onClick = { onCommitClick(commit.id) },
+                        onLongClick = {
+                            taggingCommit = commit
+                            tagName = ""
+                            tagMessage = ""
+                            showTagDialog = true
+                        }
+                    )
+                }
 
                     if (isLoading) {
                         item {
@@ -229,12 +240,59 @@ fun HistoryScreen(
         }
     }
 
-    if (showTagDialog) {
+    if (showTagDialog && taggingCommit != null) {
         AlertDialog(
             onDismissRequest = { showTagDialog = false },
-            title = { Text(stringResource(R.string.create_tag)) },
+            title = { Text(stringResource(R.string.manage_tags)) },
             text = {
                 Column {
+                    if (taggingCommit!!.tags.isNotEmpty()) {
+                        Text(
+                            text = stringResource(R.string.existing_tags),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            taggingCommit!!.tags.forEach { tag ->
+                                InputChip(
+                                    selected = true,
+                                    onClick = {},
+                                    label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
+                                    trailingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.remove_tag, tag),
+                                            modifier = Modifier
+                                                .size(16.dp)
+                                                .clickable {
+                                                    tagToDelete = tag
+                                                    showDeleteTagConfirm = true
+                                                },
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    },
+                                    colors = InputChipDefaults.inputChipColors(
+                                        selectedContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        selectedLabelColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                )
+                            }
+                        }
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    }
+
+                    Text(
+                        text = stringResource(R.string.create_tag),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = tagName,
                         onValueChange = { tagName = it },
@@ -256,7 +314,7 @@ fun HistoryScreen(
                 TextButton(
                     onClick = {
                         if (tagName.isNotBlank()) {
-                            viewModel.createTag(taggingCommitId, tagName, tagMessage)
+                            viewModel.createTag(taggingCommit!!.id, tagName, tagMessage)
                             showTagDialog = false
                         }
                     },
@@ -267,6 +325,34 @@ fun HistoryScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showTagDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
+
+    if (showDeleteTagConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteTagConfirm = false },
+            title = { Text(stringResource(R.string.confirm_title)) },
+            text = { Text(stringResource(R.string.delete_tag_confirm, tagToDelete)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteTag(tagToDelete)
+                        // 同步更新本地状态，以便对话框不退出也能看到变化
+                        taggingCommit = taggingCommit?.copy(
+                            tags = taggingCommit!!.tags.filter { it != tagToDelete }
+                        )
+                        showDeleteTagConfirm = false
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteTagConfirm = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             }

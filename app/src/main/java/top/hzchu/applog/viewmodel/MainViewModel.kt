@@ -626,6 +626,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun createTag(commitId: String, tagName: String, message: String) {
         viewModelScope.launch {
+            _toastMessage.value = getApplication<Application>().getString(R.string.creating_tag)
             gitManager.createTag(commitId, tagName, message).onSuccess {
                 // Try to sync immediately if remote is configured
                 val (url, user, pass) = getRemoteConfig()
@@ -647,6 +648,38 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }.onFailure {
                 _toastMessage.value = getApplication<Application>().getString(R.string.tag_failed, it.message)
+            }
+        }
+    }
+
+    fun deleteTag(tagName: String) {
+        viewModelScope.launch {
+            _toastMessage.value = getApplication<Application>().getString(R.string.deleting_tag)
+            // 获取标签信息以便失败时回滚
+            val tagInfoResult = gitManager.getTagInfo(tagName)
+            val tagInfo = tagInfoResult.getOrNull()
+
+            gitManager.deleteTag(tagName).onSuccess {
+                val (url, user, pass) = getRemoteConfig()
+                if (url.isNotBlank()) {
+                    val ignoreSsl = isIgnoreSslErrors()
+                    gitManager.pushDeleteRemoteTag(tagName, url, user, pass, ignoreSsl).onSuccess {
+                        _toastMessage.value = getApplication<Application>().getString(R.string.tag_deleted, tagName)
+                        loadHistory()
+                    }.onFailure { e ->
+                        // 远程同步失败，恢复本地标签
+                        if (tagInfo != null) {
+                            gitManager.createTag(tagInfo.commitId, tagName, tagInfo.message)
+                        }
+                        _toastMessage.value = getApplication<Application>().getString(R.string.tag_delete_sync_failed, e.message)
+                        loadHistory()
+                    }
+                } else {
+                    _toastMessage.value = getApplication<Application>().getString(R.string.tag_deleted, tagName)
+                    loadHistory()
+                }
+            }.onFailure {
+                _toastMessage.value = getApplication<Application>().getString(R.string.error_prefix, it.message)
             }
         }
     }

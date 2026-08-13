@@ -122,6 +122,8 @@
     <string name="committed">Committed: %s</string>
     <string name="load_more">Load More</string>
     <string name="no_changes">No changes</string>
+    <string name="creating_tag">Creating tag in background...</string>
+    <string name="deleting_tag">Deleting tag in background...</string>
     <string name="commit_failed">Commit failed: %s</string>
     <string name="error_prefix">Error: %s</string>
     <string name="select_first_commit">Please select first commit</string>
@@ -129,8 +131,12 @@
     <string name="diff_failed">Diff failed: %s</string>
     <string name="select_historical_commit">Please select a historical commit</string>
     <string name="tag_created">Tag \"%s\" created</string>
+    <string name="tag_deleted">Tag \"%s\" deleted</string>
     <string name="tag_failed">Tag failed: %s</string>
     <string name="tag_sync_failed">Tag created locally but failed to sync: %s. Local tag removed.</string>
+    <string name="tag_delete_sync_failed">Tag deleted locally but failed to sync with remote: %s</string>
+    <string name="manage_tags">Manage Tags</string>
+    <string name="existing_tags">Existing Tags</string>
     <string name="pushing">Pushing...</string>
     <string name="push_success">Push success</string>
     <string name="push_error">Push error: %s</string>
@@ -189,6 +195,7 @@
     <string name="tags_removed_diff">Removed tags: %s</string>
     <string name="tags_placeholder">Press Enter to add tags</string>
     <string name="remove_tag">Remove %s</string>
+    <string name="delete_tag_confirm">Delete tag \"%s\"?</string>
 
     <string name="search_hint">Search apps, packages, notes...</string>
     <string name="sort_by">Sort by</string>
