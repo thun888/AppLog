@@ -9,17 +9,23 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -276,6 +282,8 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
+                    Icon(Icons.Filled.CloudUpload, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.push))
                 }
                 Button(
@@ -286,6 +294,8 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
+                    Icon(Icons.Filled.CloudDownload, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.pull))
                 }
             }
@@ -323,6 +333,8 @@ fun SettingsScreen(
                             },
                             colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
+                            Icon(Icons.Filled.DeleteForever, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
                             Text(stringResource(R.string.confirm))
                         }
                     },
@@ -346,6 +358,8 @@ fun SettingsScreen(
                         contentColor = MaterialTheme.colorScheme.onError
                     )
                 ) {
+                    Icon(Icons.Filled.Upload, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.force_push))
                 }
                 Button(
@@ -356,6 +370,8 @@ fun SettingsScreen(
                         contentColor = MaterialTheme.colorScheme.onError
                     )
                 ) {
+                    Icon(Icons.Filled.Download, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.force_pull))
                 }
             }
@@ -392,6 +408,8 @@ fun SettingsScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
+                    Icon(Icons.Filled.Warning, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
                     Text(stringResource(R.string.confirm))
                 }
             },

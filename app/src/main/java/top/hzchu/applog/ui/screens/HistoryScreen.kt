@@ -17,6 +17,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -190,6 +192,8 @@ fun HistoryScreen(
                                     .fillMaxWidth()
                                     .padding(8.dp)
                             ) {
+                                Icon(Icons.Filled.ExpandMore, contentDescription = null)
+                                Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.load_more))
                             }
                         }

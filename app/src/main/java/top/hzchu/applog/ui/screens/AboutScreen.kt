@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -120,34 +122,42 @@ fun AboutScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(stringResource(R.string.checking_updates))
             } else {
+                val isNewer = latestVersion?.let { compareVersions(it, currentVersion) } ?: false
+
                 if (latestVersion != null) {
-                    val isNewer = compareVersions(latestVersion!!, currentVersion)
-                    if (isNewer) {
-                        Text(
-                            text = stringResource(R.string.new_version_available, latestVersion!!),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = {
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/thun888/AppLog/releases/latest"))
-                            context.startActivity(intent)
-                        }) {
-                            Icon(Icons.Default.Update, contentDescription = null)
-                            Spacer(Modifier.size(8.dp))
-                            Text(stringResource(R.string.update_now))
-                        }
-                    } else {
-                        Text(stringResource(R.string.already_latest))
-                    }
+                    Text(
+                        text = if (isNewer) 
+                            stringResource(R.string.new_version_available, latestVersion!!)
+                        else 
+                            stringResource(R.string.already_latest),
+                        color = if (isNewer) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (isNewer) FontWeight.Bold else FontWeight.Normal,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
                 
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { viewModel.checkForUpdates() },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text(stringResource(R.string.check_updates))
+                if (isNewer) {
+                    Button(
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/thun888/AppLog/releases/latest"))
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Update, contentDescription = null)
+                        Spacer(Modifier.size(8.dp))
+                        Text(stringResource(R.string.update_now))
+                    }
+                } else {
+                    Button(
+                        onClick = { viewModel.checkForUpdates() },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Filled.Refresh, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.check_updates))
+                    }
                 }
             }
         }
