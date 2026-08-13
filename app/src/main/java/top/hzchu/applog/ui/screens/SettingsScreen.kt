@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +58,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import top.hzchu.applog.R
 import top.hzchu.applog.viewmodel.MainViewModel
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,6 +83,9 @@ fun SettingsScreen(
     var autoScan by remember { mutableStateOf(viewModel.getAutoScanOnStart()) }
     var showIndexBar by remember { mutableStateOf(viewModel.showIndexBar.value) }
     var pendingForceAction by remember { mutableStateOf<String?>(null) } // "push" or "pull"
+
+    val isPushing by viewModel.isPushing.collectAsState()
+    val isPulling by viewModel.isPulling.collectAsState()
 
     Scaffold(
         modifier = modifier,
@@ -297,11 +303,20 @@ fun SettingsScreen(
                         viewModel.saveRemoteConfig(url, username, password)
                         viewModel.pushToRemote(url, username, password, force = false)
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isPushing && !isPulling
                 ) {
-                    Icon(Icons.Filled.CloudUpload, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.push))
+                    if (isPushing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(Icons.Filled.CloudUpload, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.push))
+                    }
                 }
                 Button(
                     onClick = {
@@ -309,11 +324,20 @@ fun SettingsScreen(
                         viewModel.saveRemoteConfig(url, username, password)
                         viewModel.pullFromRemote(url, username, password, force = false)
                     },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = !isPushing && !isPulling
                 ) {
-                    Icon(Icons.Filled.CloudDownload, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.pull))
+                    if (isPulling) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(Icons.Filled.CloudDownload, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.pull))
+                    }
                 }
             }
             
@@ -373,11 +397,20 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
-                    )
+                    ),
+                    enabled = !isPushing && !isPulling
                 ) {
-                    Icon(Icons.Filled.Upload, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.force_push))
+                    if (isPushing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onError
+                        )
+                    } else {
+                        Icon(Icons.Filled.Upload, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.force_push))
+                    }
                 }
                 Button(
                     onClick = { pendingForceAction = "pull" },
@@ -385,11 +418,20 @@ fun SettingsScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError
-                    )
+                    ),
+                    enabled = !isPushing && !isPulling
                 ) {
-                    Icon(Icons.Filled.Download, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.force_pull))
+                    if (isPulling) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onError
+                        )
+                    } else {
+                        Icon(Icons.Filled.Download, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.force_pull))
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(32.dp))

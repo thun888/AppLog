@@ -210,6 +210,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isCheckingUpdates = MutableStateFlow(false)
     val isCheckingUpdates = _isCheckingUpdates.asStateFlow()
 
+    private val _isPushing = MutableStateFlow(false)
+    val isPushing = _isPushing.asStateFlow()
+
+    private val _isPulling = MutableStateFlow(false)
+    val isPulling = _isPulling.asStateFlow()
+
     fun showToast(message: String) {
         _toastMessage.value = message
     }
@@ -749,6 +755,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun pushToRemote(remoteUrl: String, username: String, password: String, force: Boolean) {
         viewModelScope.launch {
+            _isPushing.value = true
             _toastMessage.value = getApplication<Application>().getString(R.string.pushing)
             try {
                 val ignoreSsl = isIgnoreSslErrors()
@@ -761,12 +768,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.push_error, e.message)
+            } finally {
+                _isPushing.value = false
             }
         }
     }
 
     fun pullFromRemote(remoteUrl: String, username: String, password: String, force: Boolean) {
         viewModelScope.launch {
+            _isPulling.value = true
             _toastMessage.value = getApplication<Application>().getString(R.string.pulling)
             try {
                 val ignoreSsl = isIgnoreSslErrors()
@@ -779,6 +789,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 _toastMessage.value = getApplication<Application>().getString(R.string.pull_error, e.message)
+            } finally {
+                _isPulling.value = false
             }
         }
     }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -63,6 +64,8 @@ fun HistoryScreen(
     val canLoadMore by viewModel.canLoadMoreHistory.collectAsState()
     val currentBranch by viewModel.currentBranch.collectAsState()
     val unpushedCount by viewModel.unpushedCount.collectAsState()
+    val isPushing by viewModel.isPushing.collectAsState()
+    val isPulling by viewModel.isPulling.collectAsState()
 
     var showTagDialog by remember { mutableStateOf(false) }
     var taggingCommitId by remember { mutableStateOf("") }
@@ -108,11 +111,33 @@ fun HistoryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.pushWithSavedConfig() }) {
-                        Icon(Icons.Filled.CloudUpload, contentDescription = stringResource(R.string.push))
+                    IconButton(
+                        onClick = { viewModel.pushWithSavedConfig() },
+                        enabled = !isPushing && !isPulling
+                    ) {
+                        if (isPushing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(Icons.Filled.CloudUpload, contentDescription = stringResource(R.string.push))
+                        }
                     }
-                    IconButton(onClick = { viewModel.pullWithSavedConfig() }) {
-                        Icon(Icons.Filled.CloudDownload, contentDescription = stringResource(R.string.pull))
+                    IconButton(
+                        onClick = { viewModel.pullWithSavedConfig() },
+                        enabled = !isPushing && !isPulling
+                    ) {
+                        if (isPulling) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Icon(Icons.Filled.CloudDownload, contentDescription = stringResource(R.string.pull))
+                        }
                     }
                     IconButton(onClick = { viewModel.loadHistory() }) {
                         Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.scan))
