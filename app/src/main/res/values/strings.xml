@@ -199,7 +199,9 @@
     <string name="group_by">Group by</string>
     <string name="group_none">None</string>
     <string name="group_tags">Tags</string>
+    <string name="group_installer">Installation Source</string>
     <string name="no_tags">No Tags</string>
+    <string name="unknown_installer">Unknown / System</string>
     <string name="collapse_group">Collapse group</string>
     <string name="expand_group">Expand group</string>
 

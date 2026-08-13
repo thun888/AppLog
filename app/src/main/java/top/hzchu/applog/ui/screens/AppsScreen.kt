@@ -209,6 +209,7 @@ fun AppsScreen(
                                         text = { Text(stringResource(when(grouping) {
                                             AppGrouping.NONE -> R.string.group_none
                                             AppGrouping.TAGS -> R.string.group_tags
+                                            AppGrouping.INSTALLER -> R.string.group_installer
                                         })) },
                                         onClick = {
                                             viewModel.setGrouping(grouping)

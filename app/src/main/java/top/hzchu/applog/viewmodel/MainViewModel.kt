@@ -26,6 +26,7 @@ import top.hzchu.applog.model.DiffResult
 import top.hzchu.applog.receiver.PackageChangeReceiver
 import top.hzchu.applog.scanner.AppScanner
 import top.hzchu.applog.serializer.AppListSerializer
+import top.hzchu.applog.utils.InstallerUtils
 import top.hzchu.applog.utils.PinyinUtils
 
 enum class AppSortOrder {
@@ -33,7 +34,7 @@ enum class AppSortOrder {
 }
 
 enum class AppGrouping {
-    NONE, TAGS
+    NONE, TAGS, INSTALLER
 }
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -130,6 +131,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 result.mapValues { it.value.toList() }.toSortedMap { a, b ->
                     if (a == "") 1 else if (b == "") -1 else a.lowercase().compareTo(b.lowercase())
+                }
+            }
+            AppGrouping.INSTALLER -> {
+                val result = mutableMapOf<String, MutableList<AppInfo>>()
+                apps.forEach { app ->
+                    val installerName = InstallerUtils.getInstallerName(getApplication(), app.installerPackageName)
+                    result.getOrPut(installerName) { mutableListOf() }.add(app)
+                }
+                result.mapValues { it.value.toList() }.toSortedMap { a, b ->
+                    val unknown = getApplication<Application>().getString(R.string.unknown_installer)
+                    if (a == unknown) 1 else if (b == unknown) -1 else a.lowercase().compareTo(b.lowercase())
                 }
             }
         }
