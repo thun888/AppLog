@@ -10,6 +10,7 @@
 /.idea/deploymentTargetSelector.xml
 /.idea/planningMode.xml
 .DS_Store
+.artifacts/
 /build
 release/
 /captures
