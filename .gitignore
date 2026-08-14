@@ -11,6 +11,7 @@
 /.idea/planningMode.xml
 .DS_Store
 .artifacts/
+.gradle-home/
 /build
 release/
 /captures

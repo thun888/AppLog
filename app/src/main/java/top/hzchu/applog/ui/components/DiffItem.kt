@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import top.hzchu.applog.R
 import top.hzchu.applog.model.AppInfo
-import top.hzchu.applog.model.DiffResult
 
 val DiffAddedColor = Color(0xFF2E7D32)
 val DiffRemovedColor = Color(0xFFC62828)

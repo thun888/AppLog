@@ -39,11 +39,6 @@
         <item quantity="one">%d unpushed</item>
         <item quantity="other">%d unpushed</item>
     </plurals>
-    <string name="scan_to_start">Scan and commit to get started</string>
-    <string name="select_commits_hint">Select 2 commits for diff comparison</string>
-    <string name="no_diff">No diff to show</string>
-    <string name="select_in_history">Select commits in History tab</string>
-    <string name="compute_diff">Compute Diff</string>
     <plurals name="diff_added">
         <item quantity="one">Added (%d)</item>
         <item quantity="other">Added (%d)</item>
@@ -81,19 +76,15 @@
     <string name="app_info_note">Note</string>
     <string name="commit_dialog_title">Commit Changes</string>
     <string name="commit_message_placeholder">Enter commit message (optional)</string>
-    <string name="note_for">Note for %s</string>
     <string name="save">Save</string>
-    <string name="save_success">Settings saved</string>
     <string name="cancel">Cancel</string>
     <string name="git_identity">Git Identity</string>
     <string name="optional_suffix">(Optional)</string>
     <string name="git_author_name">Author Name</string>
     <string name="git_author_email">Author Email</string>
-    <string name="save_git_identity">Save Identity</string>
     <string name="debounce_settings">Notification Settings</string>
     <string name="current_counter">Pending changes: %1$d / %2$d</string>
     <string name="notification_threshold">Change threshold for alerts</string>
-    <string name="save_threshold">Save Settings</string>
     <string name="remote_repository">Remote Repository</string>
     <string name="remote_url">Remote URL</string>
     <string name="username">Username</string>
@@ -102,7 +93,6 @@
     <string name="reset_repository">Reset Local Repository</string>
     <string name="reset_confirm">This will delete all local history and settings. Continue?</string>
     <string name="reset_success">Repository reset successful</string>
-    <string name="save_remote_config">Save Remote Config</string>
     <string name="notification_channel_name">App Change Alert</string>
     <string name="notification_channel_desc">App install/uninstall/update alerts</string>
     <string name="notif_title_list_changed">App list changed</string>
@@ -126,10 +116,7 @@
     <string name="deleting_tag">Deleting tag in background...</string>
     <string name="commit_failed">Commit failed: %s</string>
     <string name="error_prefix">Error: %s</string>
-    <string name="select_first_commit">Please select first commit</string>
-    <string name="select_second_commit">Please select second commit</string>
     <string name="diff_failed">Diff failed: %s</string>
-    <string name="select_historical_commit">Please select a historical commit</string>
     <string name="tag_created">Tag \"%s\" created</string>
     <string name="tag_deleted">Tag \"%s\" deleted</string>
     <string name="tag_failed">Tag failed: %s</string>
@@ -163,7 +150,6 @@
     <string name="store_360">360 App Store</string>
     <string name="app_not_openable">This app cannot be opened</string>
     <string name="share_apk">Share APK</string>
-    <string name="uninstall_app">Uninstall</string>
     <string name="extract_success">APK extracted to Downloads</string>
     <string name="extract_failed">Extraction failed: %s</string>
     <plurals name="diff_summary_added">

@@ -15,17 +15,17 @@ data class DiffResult(
     /** 标签变更的应用: Pair(旧版, 新版) */
     val tagsChanged: List<Pair<AppInfo, AppInfo>> = emptyList()
 ) {
-    val isEmpty: Boolean
-        get() = added.isEmpty() && removed.isEmpty() && updated.isEmpty() && noteChanged.isEmpty() && tagsChanged.isEmpty()
-
-    val totalChanges: Int
-        get() = added.size + removed.size + updated.size + noteChanged.size + tagsChanged.size
-
-    enum class ChangeType {
-        ADDED,
-        REMOVED,
-        UPDATED,
-        NOTE_CHANGED,
-        TAGS_CHANGED
-    }
+//    val isEmpty: Boolean
+//        get() = added.isEmpty() && removed.isEmpty() && updated.isEmpty() && noteChanged.isEmpty() && tagsChanged.isEmpty()
+//
+//    val totalChanges: Int
+//        get() = added.size + removed.size + updated.size + noteChanged.size + tagsChanged.size
+//
+//    enum class ChangeType {
+//        ADDED,
+//        REMOVED,
+//        UPDATED,
+//        NOTE_CHANGED,
+//        TAGS_CHANGED
+//    }
 }

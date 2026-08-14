@@ -310,10 +310,8 @@ fun AppLogApp() {
                 )
             }
             composable("commit_detail/{commitId}") { backStackEntry ->
-                val commitId = backStackEntry.arguments?.getString("commitId") ?: ""
                 CommitDetailScreen(
                     viewModel = viewModel,
-                    commitId = commitId,
                     onBack = { navController.popBackStack() },
                     onAppClick = { app, prev ->
                         editingApp = app

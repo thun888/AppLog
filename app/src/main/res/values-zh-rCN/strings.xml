@@ -37,11 +37,6 @@
     <plurals name="unpushed_count">
         <item quantity="other">%d 个待推送</item>
     </plurals>
-    <string name="scan_to_start">扫描并提交以开始</string>
-    <string name="select_commits_hint">选择两个提交以进行对比</string>
-    <string name="no_diff">暂无对比结果</string>
-    <string name="select_in_history">在历史页选择提交</string>
-    <string name="compute_diff">计算差异</string>
     <plurals name="diff_added">
         <item quantity="other">新增 (%d)</item>
     </plurals>
@@ -75,19 +70,15 @@
     <string name="app_info_note">备注</string>
     <string name="commit_dialog_title">提交更改</string>
     <string name="commit_message_placeholder">输入提交信息 (可选)</string>
-    <string name="note_for">%s 的备注</string>
     <string name="save">保存</string>
-    <string name="save_success">设置已保存</string>
     <string name="cancel">取消</string>
     <string name="git_identity">Git 身份</string>
     <string name="optional_suffix">（可选）</string>
     <string name="git_author_name">作者名称</string>
     <string name="git_author_email">作者邮箱</string>
-    <string name="save_git_identity">保存身份</string>
     <string name="debounce_settings">提醒设置</string>
     <string name="current_counter">待处理变更: %1$d / %2$d</string>
     <string name="notification_threshold">触发提醒的变更次数</string>
-    <string name="save_threshold">保存设置</string>
     <string name="remote_repository">远程仓库</string>
     <string name="remote_url">远程地址</string>
     <string name="username">用户名</string>
@@ -96,7 +87,6 @@
     <string name="reset_repository">重置本地仓库</string>
     <string name="reset_confirm">这将删除所有本地历史和设置，确定继续？</string>
     <string name="reset_success">仓库重置成功</string>
-    <string name="save_remote_config">保存远程配置</string>
     <string name="notification_channel_name">应用变更提醒</string>
     <string name="notification_channel_desc">应用安装/卸载/更新提醒</string>
     <string name="notif_title_list_changed">应用列表已更改</string>
@@ -119,10 +109,7 @@
     <string name="deleting_tag">正在后台删除标签...</string>
     <string name="commit_failed">提交失败: %s</string>
     <string name="error_prefix">错误: %s</string>
-    <string name="select_first_commit">请选择第一个提交</string>
-    <string name="select_second_commit">请选择第二个提交</string>
     <string name="diff_failed">对比失败: %s</string>
-    <string name="select_historical_commit">请选择一个历史提交</string>
     <string name="tag_created">标签 \"%s\" 已创建</string>
     <string name="tag_deleted">标签 \"%s\" 已删除</string>
     <string name="tag_failed">创建标签失败: %s</string>
@@ -156,7 +143,6 @@
     <string name="store_360">360 手机助手</string>
     <string name="app_not_openable">无法打开该应用</string>
     <string name="share_apk">分享安装包</string>
-    <string name="uninstall_app">卸载</string>
     <string name="extract_success">安装包已提取到下载目录</string>
     <string name="extract_failed">提取失败: %s</string>
     <plurals name="diff_summary_added">

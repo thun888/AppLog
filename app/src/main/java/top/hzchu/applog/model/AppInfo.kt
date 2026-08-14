@@ -24,7 +24,6 @@ data class AppInfo(
 
     companion object {
         const val FIELD_DELIMITER = "|"
-        const val ESCAPE_CHAR = "\\"
 
         /**
          * 从序列化行反序列化

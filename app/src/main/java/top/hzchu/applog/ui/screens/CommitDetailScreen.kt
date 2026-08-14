@@ -61,7 +61,6 @@ import top.hzchu.applog.viewmodel.MainViewModel
 @Composable
 fun CommitDetailScreen(
     viewModel: MainViewModel,
-    @Suppress("UNUSED_PARAMETER") commitId: String,
     onBack: () -> Unit,
     onAppClick: (top.hzchu.applog.model.AppInfo, top.hzchu.applog.model.AppInfo?) -> Unit,
     modifier: Modifier = Modifier

@@ -26,17 +26,17 @@ class PackageChangeReceiver : BroadcastReceiver() {
         const val NOTIFICATION_CHANNEL_ID = "app_changes"
         const val NOTIFICATION_ID = 1001
         const val ACTION_RESET_COUNTER = "top.hzchu.applog.RESET_COUNTER"
-        const val ACTION_TRIGGER_SCAN = "top.hzchu.applog.TRIGGER_SCAN"
+        // const val ACTION_TRIGGER_SCAN = "top.hzchu.applog.TRIGGER_SCAN"
 
         private const val PREFS_NAME = "applog_debounce"
         private const val KEY_COUNTER = "debounce_counter"
         private const val DEFAULT_THRESHOLD = 5
 
-        val SUPPORTED_ACTIONS = setOf(
-            Intent.ACTION_PACKAGE_ADDED,
-            Intent.ACTION_PACKAGE_REMOVED,
-            Intent.ACTION_PACKAGE_REPLACED
-        )
+        // val SUPPORTED_ACTIONS = setOf(
+        //     Intent.ACTION_PACKAGE_ADDED,
+        //     Intent.ACTION_PACKAGE_REMOVED,
+        //     Intent.ACTION_PACKAGE_REPLACED
+        // )
 
         fun resetCounter(context: Context) {
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
